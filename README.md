@@ -1,8 +1,18 @@
-# rust-template
-Rust template repository
+# rusty-automata
 
-## Build
-`cargo build`
+![rustacean](docs/images/rustacean.png)
 
-## Run
-`cargo run`
+
+## examples
+
+<!-- TODO: add example images -->
+
+### gol
+
+- `cargo run --example neat`
+
+
+## web
+
+- `cargo install wasm-server-runner`
+- `cargo run --example neat --target wasm32-unknown-unknown`
