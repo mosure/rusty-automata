@@ -20,6 +20,7 @@ pub struct RustyAutomataApp {
     show_fps: bool,
     width: f32,
     height: f32,
+    name: String,
 }
 
 impl Default for RustyAutomataApp {
@@ -30,6 +31,7 @@ impl Default for RustyAutomataApp {
             show_fps: true,
             width: 1920.0,
             height: 1080.0,
+            name: "rusty automata".to_string(),
         }
     }
 }
@@ -44,7 +46,7 @@ impl Plugin for RustyAutomataApp {
                     present_mode: bevy::window::PresentMode::AutoVsync,
                     prevent_default_event_handling: false,
                     resolution: (self.width, self.height).into(),
-                    title: "rusty automata".into(),
+                    title: self.name.clone(),
                     ..default()
                 }),
                 ..default()

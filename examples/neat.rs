@@ -7,15 +7,46 @@ use bevy::{
     reflect::TypeUuid,
     render::{
         camera::RenderTarget,
+        extract_resource::{
+            ExtractResource,
+            ExtractResourcePlugin,
+        },
+        render_asset::RenderAssets,
+        render_graph::{
+            self,
+            RenderGraph,
+        },
+        renderer::{
+            RenderContext,
+            RenderDevice,
+        },
         render_resource::{
             AsBindGroup,
+            BindGroup,
+            BindGroupDescriptor,
+            BindGroupEntry,
+            BindGroupLayout,
+            BindGroupLayoutDescriptor,
+            BindGroupLayoutEntry,
+            BindingResource,
+            BindingType,
+            CachedComputePipelineId,
+            CachedPipelineState,
+            ComputePassDescriptor,
+            ComputePipelineDescriptor,
             Extent3d,
+            PipelineCache,
             ShaderRef,
+            ShaderStages,
+            StorageTextureAccess,
             TextureDescriptor,
             TextureDimension,
             TextureFormat,
             TextureUsages,
+            TextureViewDimension,
         },
+        RenderApp,
+        RenderSet,
         view::RenderLayers,
     },
     sprite::{
@@ -30,34 +61,27 @@ use rusty_automata::{
     utils::setup_hooks,
 };
 
+use std::borrow::Cow;
+
+
+const WORKGROUP_SIZE: u32 = 8;
+
 
 fn example_app() {
     App::new()
         .add_plugin(RustyAutomataApp::default())
-        .add_plugin(Material2dPlugin::<NeatMaterial>::default())
+        .add_plugin(NeatComputePlugin)
         .add_startup_system(setup)
         .run();
 }
 
 
-#[derive(Component)]
-struct StatePass;
-
-#[derive(Component)]
-struct RenderPass;
-
-
-
-// TODO: majority of game of life example can be used: https://github.com/bevyengine/bevy/blob/main/examples/shader/compute_shader_game_of_life.rs#L64
-// however, it may be more efficient to implement in fragment mode
-
-
+// TODO: pass runtime size from image -> pipeline in FromWorld of render pipeline
 
 
 fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
-    mut error_function_materials: ResMut<Assets<NeatMaterial>>,
     windows: Query<&Window>,
     mut images: ResMut<Assets<Image>>,
 ) {
@@ -65,69 +89,216 @@ fn setup(
     let size = Extent3d {
         width: window.resolution.physical_width(),
         height: window.resolution.physical_height(),
-        ..default()
+        depth_or_array_layers: 1,
     };
 
-    let quad_handle = meshes.add(Mesh::from(shape::Quad::new(Vec2::new(
-        size.width as f32,
-        size.height as f32,
-    ))));
+    let mut image = Image::new_fill(
+        size,
+        TextureDimension::D2,
+        &[0, 0, 0, 255],
+        TextureFormat::Rgba8Unorm,
+    );
+    image.texture_descriptor.usage =
+        TextureUsages::COPY_DST | TextureUsages::STORAGE_BINDING | TextureUsages::TEXTURE_BINDING;
+    let image = images.add(image);
 
-    let material_handle = error_function_materials.add(NeatMaterial {});
-
-    let mut image = Image {
-        texture_descriptor: TextureDescriptor {
-            label: None,
-            size,
-            dimension: TextureDimension::D2,
-            format: TextureFormat::Bgra8UnormSrgb,
-            mip_level_count: 1,
-            sample_count: 1,
-            usage: TextureUsages::TEXTURE_BINDING
-                | TextureUsages::COPY_DST
-                | TextureUsages::RENDER_ATTACHMENT,
-            view_formats: &[],
+    commands.spawn(SpriteBundle {
+        sprite: Sprite {
+            custom_size: Some(Vec2::new(size.width as f32, size.height as f32)),
+            ..default()
         },
+        texture: image.clone(),
         ..default()
-    };
-    image.resize(size); // fill image.data with zeroes
+    });
+    commands.spawn(Camera2dBundle::default());
 
-    let image_handle = images.add(image);
-
-
-    let first_pass_layer = RenderLayers::layer(1);
-
-
-    commands.spawn((
-        MaterialMesh2dBundle {
-            mesh: quad_handle.into(),
-            material: material_handle,
-            transform: Transform {
-                translation: Vec3::new(0.0, 0.0, 1.5),
-                ..default()
-            },
-            ..default()
-        },
-    ));
-
-    commands.spawn((
-        Camera2dBundle {
-            ..default()
-        },
-    ));
+    commands.insert_resource(NeatImage(image));
 }
 
 
-#[derive(AsBindGroup, TypeUuid, Clone)]
-#[uuid = "ac2f08eb-67fb-23f1-a908-54871ea597d5"]
-struct NeatMaterial { }
 
-impl Material2d for NeatMaterial {
-    fn fragment_shader() -> ShaderRef {
-        "shaders/neat.wgsl".into()
+pub struct NeatComputePlugin;
+
+impl Plugin for NeatComputePlugin {
+    fn build(&self, app: &mut App) {
+        app.add_plugin(ExtractResourcePlugin::<NeatImage>::default());
+        let render_app = app.sub_app_mut(RenderApp);
+        render_app
+            .init_resource::<NeatPipeline>()
+            .add_system(queue_bind_group.in_set(RenderSet::Queue));
+
+        let mut render_graph = render_app.world.resource_mut::<RenderGraph>();
+        render_graph.add_node("neat", NeatNode::default());
+        render_graph.add_node_edge(
+            "neat",
+            bevy::render::main_graph::node::CAMERA_DRIVER,
+        );
     }
 }
 
+#[derive(Resource, Clone, Deref, ExtractResource)]
+struct NeatImage(Handle<Image>);
+
+#[derive(Resource)]
+struct NeatImageBindGroup(BindGroup);
+
+fn queue_bind_group(
+    mut commands: Commands,
+    pipeline: Res<NeatPipeline>,
+    gpu_images: Res<RenderAssets<Image>>,
+    game_of_life_image: Res<NeatImage>,
+    render_device: Res<RenderDevice>,
+) {
+    let view = &gpu_images[&game_of_life_image.0];
+    let bind_group = render_device.create_bind_group(&BindGroupDescriptor {
+        label: None,
+        layout: &pipeline.texture_bind_group_layout,
+        entries: &[BindGroupEntry {
+            binding: 0,
+            resource: BindingResource::TextureView(&view.texture_view),
+        }],
+    });
+    commands.insert_resource(NeatImageBindGroup(bind_group));
+}
+
+#[derive(Resource)]
+pub struct NeatPipeline {
+    texture_bind_group_layout: BindGroupLayout,
+    init_pipeline: CachedComputePipelineId,
+    update_pipeline: CachedComputePipelineId,
+    size: (u32, u32),
+}
+
+impl FromWorld for NeatPipeline {
+    fn from_world(world: &mut World) -> Self {
+        let texture_bind_group_layout =
+            world
+                .resource::<RenderDevice>()
+                .create_bind_group_layout(&BindGroupLayoutDescriptor {
+                    label: None,
+                    entries: &[BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: ShaderStages::COMPUTE,
+                        ty: BindingType::StorageTexture {
+                            access: StorageTextureAccess::ReadWrite,
+                            format: TextureFormat::Rgba8Unorm,
+                            view_dimension: TextureViewDimension::D2,
+                        },
+                        count: None,
+                    }],
+                });
+        let shader = world
+            .resource::<AssetServer>()
+            .load("shaders/game_of_life.wgsl");
+        let pipeline_cache = world.resource::<PipelineCache>();
+        let init_pipeline = pipeline_cache.queue_compute_pipeline(ComputePipelineDescriptor {
+            label: None,
+            layout: vec![texture_bind_group_layout.clone()],
+            push_constant_ranges: Vec::new(),
+            shader: shader.clone(),
+            shader_defs: vec![],
+            entry_point: Cow::from("init"),
+        });
+        let update_pipeline = pipeline_cache.queue_compute_pipeline(ComputePipelineDescriptor {
+            label: None,
+            layout: vec![texture_bind_group_layout.clone()],
+            push_constant_ranges: Vec::new(),
+            shader,
+            shader_defs: vec![],
+            entry_point: Cow::from("update"),
+        });
+
+        NeatPipeline {
+            texture_bind_group_layout,
+            init_pipeline,
+            update_pipeline,
+        }
+    }
+}
+
+enum NeatState {
+    Loading,
+    Init,
+    Update,
+}
+
+struct NeatNode {
+    state: NeatState,
+    size: (u32, u32),
+}
+
+impl Default for NeatNode {
+    fn default() -> Self {
+        Self {
+            state: NeatState::Loading,
+            size: (1920, 1080),
+        }
+    }
+}
+
+impl render_graph::Node for NeatNode {
+    fn update(&mut self, world: &mut World) {
+        let pipeline = world.resource::<NeatPipeline>();
+        let pipeline_cache = world.resource::<PipelineCache>();
+
+        // if the corresponding pipeline has loaded, transition to the next stage
+        match self.state {
+            NeatState::Loading => {
+                if let CachedPipelineState::Ok(_) =
+                    pipeline_cache.get_compute_pipeline_state(pipeline.init_pipeline)
+                {
+                    self.state = NeatState::Init;
+                }
+            }
+            NeatState::Init => {
+                if let CachedPipelineState::Ok(_) =
+                    pipeline_cache.get_compute_pipeline_state(pipeline.update_pipeline)
+                {
+                    self.state = NeatState::Update;
+                }
+            }
+            NeatState::Update => {}
+        }
+    }
+
+    fn run(
+        &self,
+        _graph: &mut render_graph::RenderGraphContext,
+        render_context: &mut RenderContext,
+        world: &World,
+    ) -> Result<(), render_graph::NodeRunError> {
+        let texture_bind_group = &world.resource::<NeatImageBindGroup>().0;
+        let pipeline_cache = world.resource::<PipelineCache>();
+        let pipeline = world.resource::<NeatPipeline>();
+
+        let mut pass = render_context
+            .command_encoder()
+            .begin_compute_pass(&ComputePassDescriptor::default());
+
+        pass.set_bind_group(0, texture_bind_group, &[]);
+
+        // select the pipeline based on the current state
+        match self.state {
+            NeatState::Loading => {}
+            NeatState::Init => {
+                let init_pipeline = pipeline_cache
+                    .get_compute_pipeline(pipeline.init_pipeline)
+                    .unwrap();
+                pass.set_pipeline(init_pipeline);
+                pass.dispatch_workgroups(SIZE.0 / WORKGROUP_SIZE, SIZE.1 / WORKGROUP_SIZE, 1);
+            }
+            NeatState::Update => {
+                let update_pipeline = pipeline_cache
+                    .get_compute_pipeline(pipeline.update_pipeline)
+                    .unwrap();
+                pass.set_pipeline(update_pipeline);
+                pass.dispatch_workgroups(SIZE.0 / WORKGROUP_SIZE, SIZE.1 / WORKGROUP_SIZE, 1);
+            }
+        }
+
+        Ok(())
+    }
+}
 
 pub fn main() {
     setup_hooks();
