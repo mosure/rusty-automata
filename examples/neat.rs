@@ -85,7 +85,7 @@ fn setup(
 
     commands.spawn(SpriteBundle {
         sprite: Sprite {
-            custom_size: Some(Vec2::new(size.width as f32, size.height as f32)),
+            custom_size: Some(Vec2::new(window.resolution.width() as f32, window.resolution.height() as f32)),
             ..default()
         },
         texture: image.clone(),
