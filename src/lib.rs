@@ -42,8 +42,8 @@ impl Plugin for RustyAutomataApp {
             .set(ImagePlugin::default_nearest())
             .set(WindowPlugin {
                 primary_window: Some(Window {
-                    fit_canvas_to_parent: true,
-                    present_mode: bevy::window::PresentMode::AutoVsync,
+                    fit_canvas_to_parent: false,
+                    present_mode: bevy::window::PresentMode::AutoNoVsync,
                     prevent_default_event_handling: false,
                     resolution: (self.width, self.height).into(),
                     title: self.name.clone(),
