@@ -73,6 +73,10 @@ fn setup(
         depth_or_array_layers: 1,
     };
 
+    // TODO: initialize state, edges, activation function, and input batch
+
+
+
     let mut image = Image::new_fill(
         size,
         TextureDimension::D2,
@@ -123,6 +127,22 @@ impl Plugin for NeatComputePlugin {
 struct NeatImage {
     handle: Handle<Image>,
     size: (u32, u32),
+}
+
+#[derive(Resource, Clone, ExtractResource)]
+struct NeatEdges {
+    handle: Handle<Image>,
+    max_edges: u32,
+}
+
+#[derive(Resource, Clone, Deref, ExtractResource)]
+struct NeatActivationFunctions(Handle<Image>);
+
+#[derive(Resource, Clone, ExtractResource)]
+struct NeatIO {
+    handle: Handle<Image>,
+    size: (u32, u32),
+    current_index: u32,
 }
 
 #[derive(Resource)]
