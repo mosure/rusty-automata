@@ -68,3 +68,7 @@ codegen-units = 1
 [[example]]
 name = "neat"
 path = "examples/neat.rs"
+
+[[example]]
+name = "activations"
+path = "examples/activations.rs"
