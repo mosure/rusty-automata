@@ -1,11 +1,18 @@
 use bevy::{
     prelude::*,
-    reflect::TypeUuid,
+    reflect::{
+        TypeUuid
+    },
     render::{
+        render_asset::{
+            RenderAssets,
+        },
         render_resource::{
             AsBindGroup,
+            AsBindGroupShaderType,
             Extent3d,
             ShaderRef,
+            ShaderType,
         },
     },
     sprite::{
@@ -14,7 +21,16 @@ use bevy::{
         MaterialMesh2dBundle
     },
 };
-
+use bevy_inspector_egui::{
+    InspectorOptions,
+    inspector_options::std_options::NumberDisplay,
+    prelude::{
+        ReflectInspectorOptions,
+    },
+    quick::{
+        AssetInspectorPlugin,
+    },
+};
 use noisy_bevy::NoisyShaderPlugin;
 
 use rusty_automata::{
@@ -32,6 +48,8 @@ fn example_app() {
         .add_plugin(PlotPlugin)
         .add_plugin(UafPlugin)
         .add_plugin(Material2dPlugin::<UafMaterial>::default())
+        .register_asset_reflect::<UafMaterial>()
+        .add_plugin(AssetInspectorPlugin::<UafMaterial>::default())
         .add_startup_system(setup_screen)
         .run();
 }
@@ -55,7 +73,7 @@ fn setup_screen(
         size.height as f32,
     ))));
 
-    let material_handle = uaf_materials.add(UafMaterial {});
+    let material_handle = uaf_materials.add(UafMaterial::default());
 
     commands.spawn((
         MaterialMesh2dBundle {
@@ -74,18 +92,67 @@ fn setup_screen(
             ..default()
         },
     ));
-
-    // TODO: add UI controls for a, b, c, d of UAF
 }
 
 
-#[derive(AsBindGroup, TypeUuid, Clone)]
+#[derive(AsBindGroup, Clone, Debug, FromReflect, InspectorOptions, Reflect, TypeUuid)]
+#[reflect(Debug, Default, InspectorOptions)]
 #[uuid = "ac2f08eb-67fa-23f1-a908-51571ea332d5"]
-struct UafMaterial { }
+#[uniform(0, UafMaterialUniform)]
+struct UafMaterial {
+    #[inspector(min = -1.0, max = 1.0, display = NumberDisplay::Slider)]
+    a: f32,
+    #[inspector(min = -1.0, max = 1.0, display = NumberDisplay::Slider)]
+    b: f32,
+    #[inspector(min = -1.0, max = 1.0, display = NumberDisplay::Slider)]
+    c: f32,
+    #[inspector(min = -1.0, max = 1.0, display = NumberDisplay::Slider)]
+    d: f32,
+    #[inspector(min = -1.0, max = 1.0, display = NumberDisplay::Slider)]
+    e: f32,
+    animate: bool,
+}
+
+impl Default for UafMaterial {
+    fn default() -> Self {
+        // default to sigmoid - https://arxiv.org/pdf/2011.03842.pdf
+        Self {
+            a: 1.01605291,
+            b: 0.492100,
+            c: 0.0,
+            d: 1.01605291,
+            e: 0.0,
+            animate: false,
+        }
+    }
+}
 
 impl Material2d for UafMaterial {
     fn fragment_shader() -> ShaderRef {
         "shaders/uaf.wgsl".into()
+    }
+}
+
+#[derive(Clone, Default, ShaderType)]
+struct UafMaterialUniform {
+    pub a: f32,
+    pub b: f32,
+    pub c: f32,
+    pub d: f32,
+    pub e: f32,
+    pub animate: f32,
+}
+
+impl AsBindGroupShaderType<UafMaterialUniform> for UafMaterial {
+    fn as_bind_group_shader_type(&self, _images: &RenderAssets<Image>) -> UafMaterialUniform {
+        UafMaterialUniform {
+            a: self.a,
+            b: self.b,
+            c: self.c,
+            d: self.d,
+            e: self.e,
+            animate: if self.animate { 1.0 } else { 0.0 },
+        }
     }
 }
 

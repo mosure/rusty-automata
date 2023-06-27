@@ -8,6 +8,18 @@
 #import bevy_pbr::utils
 
 
+struct UafMaterial {
+    a: f32,
+    b: f32,
+    c: f32,
+    d: f32,
+    e: f32,
+    animate: f32,
+};
+
+@group(1) @binding(0)
+var<uniform> material: UafMaterial;
+
 const Pi: f32 = 3.14159265359;
 
 @fragment
@@ -59,11 +71,11 @@ fn fragment(
 
     let result = fUAF(
         xy.x,
-        n1,
-        n2,
-        n3,
-        n4,
-        0.0,
+        material.a + n1 * material.animate,
+        material.b + n2 * material.animate,
+        material.c + n3 * material.animate,
+        material.d + n4 * material.animate,
+        material.e,
     );
 
     col = draw_curve(col, xy.y, result, vec4<f32>(0.91, 0.13, 0.23, 1.0));

@@ -28,6 +28,7 @@ bevy = { version = "0.10.1", default-features=false, features = [
   "zstd",
   "png",
 ]}
+bevy-inspector-egui = "0.18.3"
 bevy_framepace = "0.12.1"
 noisy_bevy = "0.3.0"
 
@@ -64,10 +65,6 @@ inherits = "release"
 opt-level = "z"
 lto = "fat"
 codegen-units = 1
-
-[[example]]
-name = "activations"
-path = "examples/activations.rs"
 
 [[example]]
 name = "neat"
