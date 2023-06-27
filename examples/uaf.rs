@@ -95,6 +95,7 @@ fn setup_screen(
 }
 
 
+// TODO: figure out why material asset handle ID is displayed instead of the material name
 #[derive(AsBindGroup, Clone, Debug, FromReflect, InspectorOptions, Reflect, TypeUuid)]
 #[reflect(Debug, Default, InspectorOptions)]
 #[uuid = "ac2f08eb-67fa-23f1-a908-51571ea332d5"]
