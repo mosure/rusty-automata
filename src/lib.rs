@@ -11,7 +11,11 @@ use bevy_framepace::{
     Limiter,
 };
 
+// TODO: move to crate project structure
 pub mod activations;
+pub mod noise;
+pub mod plot;
+pub mod uaf;
 pub mod utils;
 
 

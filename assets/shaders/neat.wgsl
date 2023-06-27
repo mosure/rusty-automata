@@ -1,3 +1,6 @@
+#import rusty_automata::uaf
+
+
 @group(0) @binding(0)
 var texture: texture_storage_2d<rgba8unorm, read_write>;
 

@@ -83,8 +83,7 @@ fn setup(
         &[0, 0, 0, 255],
         TextureFormat::Rgba8Unorm,
     );
-    image.texture_descriptor.usage =
-        TextureUsages::COPY_DST | TextureUsages::STORAGE_BINDING | TextureUsages::TEXTURE_BINDING;
+    image.texture_descriptor.usage = TextureUsages::COPY_DST | TextureUsages::STORAGE_BINDING | TextureUsages::TEXTURE_BINDING;
     let image = images.add(image);
 
     commands.spawn(SpriteBundle {
@@ -115,6 +114,7 @@ impl Plugin for NeatComputePlugin {
             .add_system(queue_bind_group.in_set(RenderSet::Queue));
 
         let mut render_graph = render_app.world.resource_mut::<RenderGraph>();
+        // TODO: add cli args to NeatNode::default()
         render_graph.add_node("neat", NeatNode::default());
         render_graph.add_node_edge(
             "neat",
@@ -124,9 +124,12 @@ impl Plugin for NeatComputePlugin {
 }
 
 #[derive(Resource, Clone, ExtractResource)]
-struct NeatImage {
-    handle: Handle<Image>,
+struct NeatGraph {
+    state: Handle<Image>,
+    edges: Handle<Image>,
+    activation_functions: Handle<Image>,
     size: (u32, u32),
+    max_edges: u32,
 }
 
 #[derive(Resource, Clone, ExtractResource)]

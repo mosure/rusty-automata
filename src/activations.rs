@@ -101,8 +101,6 @@ pub fn generate_activation_texture() -> Image {
             &|x| x * (1.0 + (-x).exp()).ln_1p().tanh(),
             // bent identity
             &|x| ((x.powi(2) + 1.0).sqrt() - 1.0) / 2.0 + x,
-            // sinc
-            &|x| if x == 0.0 { 1.0 } else { x.sin() / x },
             // gaussian
             &|x| (-x.powi(2)).exp(),
             // soft exponential
@@ -130,10 +128,10 @@ pub fn generate_activation_texture() -> Image {
         None,
         Some(resolution),
     );
-    values = sort_by_density(
-        values,
-        (resolution / 2) as usize
-    );
+    // values = sort_by_density(
+    //     values,
+    //     (resolution / 2) as usize
+    // );
 
     let size = Extent3d {
         width: resolution,
