@@ -11,6 +11,9 @@
 
 - `cargo run --example neat`
 
+### uaf
+
+- `cargo run --example uaf`
 
 ## web
 
