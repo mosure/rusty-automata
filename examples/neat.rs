@@ -43,6 +43,7 @@ use bevy::{
 
 use rusty_automata::{
     RustyAutomataApp,
+    uaf::UafPlugin,
     utils::setup_hooks,
 };
 
@@ -56,6 +57,7 @@ fn example_app() {
     App::new()
         .add_plugin(RustyAutomataApp::default())
         .add_plugin(NeatComputePlugin)
+        .add_plugin(UafPlugin)
         .add_startup_system(setup)
         .run();
 }
@@ -67,39 +69,68 @@ fn setup(
     mut images: ResMut<Assets<Image>>,
 ) {
     let window = windows.single();
-    let size = Extent3d {
+    let field_size = Extent3d {
         width: window.resolution.width() as u32,
         height: window.resolution.height() as u32,
         depth_or_array_layers: 1,
     };
 
-    // TODO: initialize state, edges, activation function, and input batch
-
-
-
-    let mut image = Image::new_fill(
-        size,
+    let mut activations = Image::new_fill(
+        field_size,
         TextureDimension::D2,
         &[0, 0, 0, 255],
         TextureFormat::Rgba8Unorm,
     );
-    image.texture_descriptor.usage = TextureUsages::COPY_DST | TextureUsages::STORAGE_BINDING | TextureUsages::TEXTURE_BINDING;
-    let image = images.add(image);
+    activations.texture_descriptor.usage = TextureUsages::COPY_DST | TextureUsages::STORAGE_BINDING | TextureUsages::TEXTURE_BINDING;
+    let activations = images.add(activations);
+
+    let mut nodes = Image::new_fill(
+        field_size,
+        TextureDimension::D2,
+        &[0, 0, 0, 255],
+        TextureFormat::Rgba8Unorm,
+    );
+    nodes.texture_descriptor.usage = TextureUsages::COPY_DST | TextureUsages::STORAGE_BINDING | TextureUsages::TEXTURE_BINDING;
+    let nodes = images.add(nodes);
+
+
+    let edge_neighborhood: u32 = 8;
+
+    // 2D to assist cache locality
+    let edges_size = Extent3d {
+        width: field_size.width * edge_neighborhood,
+        height: field_size.height * edge_neighborhood,
+        depth_or_array_layers: 1,
+    };
+
+    let mut edges = Image::new_fill(
+        edges_size,
+        TextureDimension::D2,
+        &[0, 0, 0, 255],
+        TextureFormat::Rgba8Unorm,
+    );
+    edges.texture_descriptor.usage = TextureUsages::COPY_DST | TextureUsages::STORAGE_BINDING | TextureUsages::TEXTURE_BINDING;
+    let edges = images.add(edges);
+
+
+    commands.insert_resource(NeatField {
+        activations,
+        edges,
+        nodes: nodes.clone(),
+        edge_neighborhood,
+        size: (field_size.width, field_size.height),
+    });
+
 
     commands.spawn(SpriteBundle {
         sprite: Sprite {
             custom_size: Some(Vec2::new(window.resolution.width() as f32, window.resolution.height() as f32)),
             ..default()
         },
-        texture: image.clone(),
+        texture: nodes,
         ..default()
     });
     commands.spawn(Camera2dBundle::default());
-
-    commands.insert_resource(NeatImage {
-        handle: image,
-        size: (size.width, size.height),
-    });
 }
 
 
@@ -107,7 +138,8 @@ pub struct NeatComputePlugin;
 
 impl Plugin for NeatComputePlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugin(ExtractResourcePlugin::<NeatImage>::default());
+        app.add_plugin(ExtractResourcePlugin::<NeatField>::default());
+
         let render_app = app.sub_app_mut(RenderApp);
         render_app
             .init_resource::<NeatPipeline>()
@@ -124,22 +156,13 @@ impl Plugin for NeatComputePlugin {
 }
 
 #[derive(Resource, Clone, ExtractResource)]
-struct NeatGraph {
-    state: Handle<Image>,
+struct NeatField {
+    activations: Handle<Image>,
     edges: Handle<Image>,
-    activation_functions: Handle<Image>,
+    nodes: Handle<Image>,
+    edge_neighborhood: u32,
     size: (u32, u32),
-    max_edges: u32,
 }
-
-#[derive(Resource, Clone, ExtractResource)]
-struct NeatEdges {
-    handle: Handle<Image>,
-    max_edges: u32,
-}
-
-#[derive(Resource, Clone, Deref, ExtractResource)]
-struct NeatActivationFunctions(Handle<Image>);
 
 #[derive(Resource, Clone, ExtractResource)]
 struct NeatIO {
@@ -148,17 +171,18 @@ struct NeatIO {
     current_index: u32,
 }
 
+
 #[derive(Resource)]
-struct NeatImageBindGroup(BindGroup);
+struct NeatBindGroup(BindGroup);
 
 fn queue_bind_group(
     mut commands: Commands,
     mut pipeline: ResMut<NeatPipeline>,
     gpu_images: Res<RenderAssets<Image>>,
-    game_of_life_image: Res<NeatImage>,
+    neat_field: Res<NeatField>,
     render_device: Res<RenderDevice>,
 ) {
-    let view = &gpu_images[&game_of_life_image.handle];
+    let view = &gpu_images[&neat_field.nodes];
     let bind_group = render_device.create_bind_group(&BindGroupDescriptor {
         label: None,
         layout: &pipeline.texture_bind_group_layout,
@@ -167,9 +191,9 @@ fn queue_bind_group(
             resource: BindingResource::TextureView(&view.texture_view),
         }],
     });
-    commands.insert_resource(NeatImageBindGroup(bind_group));
+    commands.insert_resource(NeatBindGroup(bind_group));
 
-    pipeline.size = game_of_life_image.size;
+    pipeline.size = neat_field.size;
 }
 
 #[derive(Resource)]
@@ -276,7 +300,7 @@ impl render_graph::Node for NeatNode {
         render_context: &mut RenderContext,
         world: &World,
     ) -> Result<(), render_graph::NodeRunError> {
-        let neat_bind_group = world.resource::<NeatImageBindGroup>();
+        let neat_bind_group = world.resource::<NeatBindGroup>();
         let pipeline_cache = world.resource::<PipelineCache>();
         let pipeline = world.resource::<NeatPipeline>();
 
