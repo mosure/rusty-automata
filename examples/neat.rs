@@ -13,8 +13,10 @@ use bevy::{
         renderer::{
             RenderContext,
             RenderDevice,
+            RenderQueue,
         },
         render_resource::{
+            AsBindGroup,
             BindGroup,
             BindGroupDescriptor,
             BindGroupEntry,
@@ -23,18 +25,25 @@ use bevy::{
             BindGroupLayoutEntry,
             BindingResource,
             BindingType,
+            BufferBinding,
+            BufferBindingType,
+            BufferInitDescriptor,
+            BufferUsages,
             CachedComputePipelineId,
             CachedPipelineState,
             ComputePassDescriptor,
             ComputePipelineDescriptor,
+            DynamicUniformBuffer,
             Extent3d,
             PipelineCache,
             ShaderStages,
+            ShaderType,
             StorageTextureAccess,
             TextureDimension,
             TextureFormat,
             TextureUsages,
             TextureViewDimension,
+            UniformBuffer,
         },
         RenderApp,
         RenderSet,
@@ -143,7 +152,9 @@ impl Plugin for NeatComputePlugin {
         let render_app = app.sub_app_mut(RenderApp);
         render_app
             .init_resource::<NeatPipeline>()
+            //.init_resource::<NeatUniformBuffer>()
             .add_system(queue_bind_group.in_set(RenderSet::Queue));
+            //.add_system(prepare_neat_uniforms.in_set(RenderSet::Prepare));
 
         let mut render_graph = render_app.world.resource_mut::<RenderGraph>();
         // TODO: add cli args to NeatNode::default()
@@ -164,12 +175,35 @@ struct NeatField {
     size: (u32, u32),
 }
 
-#[derive(Resource, Clone, ExtractResource)]
-struct NeatIO {
-    handle: Handle<Image>,
-    size: (u32, u32),
-    current_index: u32,
-}
+// #[derive(Resource, Clone, ExtractResource)]
+// struct NeatIO {
+//     handle: Handle<Image>,
+//     size: (u32, u32),
+//     current_index: u32,
+// }
+
+
+// #[derive(Clone, Default, ShaderType)]
+// pub struct NeatUniform {
+//     edge_neighborhood: u32,
+// }
+
+// #[derive(Resource, Default)]
+// pub struct NeatUniformBuffer {
+//     pub buffer: UniformBuffer<NeatUniform>,
+// }
+
+// fn prepare_neat_uniforms(
+//     render_device: Res<RenderDevice>,
+//     render_queue: Res<RenderQueue>,
+//     mut uniform_buffer: ResMut<NeatUniformBuffer>,
+//     neat_field: Res<NeatField>,
+// ) {
+//     let mut buffer = uniform_buffer.buffer.get_mut();
+//     buffer.edge_neighborhood = neat_field.edge_neighborhood;
+
+//     uniform_buffer.buffer.write_buffer(&render_device, &render_queue);
+// }
 
 
 #[derive(Resource)]
@@ -181,16 +215,37 @@ fn queue_bind_group(
     gpu_images: Res<RenderAssets<Image>>,
     neat_field: Res<NeatField>,
     render_device: Res<RenderDevice>,
+    //uniform_buffer: ResMut<NeatUniformBuffer>,
 ) {
-    let view = &gpu_images[&neat_field.nodes];
     let bind_group = render_device.create_bind_group(&BindGroupDescriptor {
         label: None,
         layout: &pipeline.texture_bind_group_layout,
-        entries: &[BindGroupEntry {
-            binding: 0,
-            resource: BindingResource::TextureView(&view.texture_view),
-        }],
+        entries: &[
+            BindGroupEntry {
+                binding: 0,
+                resource: BindingResource::TextureView(
+                    &gpu_images[&neat_field.nodes].texture_view // TODO: change to activations
+                ),
+            },
+            // BindGroupEntry {
+            //     binding: 1,
+            //     resource: BindingResource::TextureView(
+            //         &gpu_images[&neat_field.edges].texture_view
+            //     ),
+            // },
+            // BindGroupEntry {
+            //     binding: 2,
+            //     resource: BindingResource::TextureView(
+            //         &gpu_images[&neat_field.nodes].texture_view
+            //     ),
+            // },
+            // BindGroupEntry {
+            //     binding: 3,
+            //     resource: uniform_buffer.buffer.binding().unwrap(),
+            // }
+        ],
     });
+
     commands.insert_resource(NeatBindGroup(bind_group));
 
     pipeline.size = neat_field.size;
@@ -211,20 +266,54 @@ impl FromWorld for NeatPipeline {
                 .resource::<RenderDevice>()
                 .create_bind_group_layout(&BindGroupLayoutDescriptor {
                     label: None,
-                    entries: &[BindGroupLayoutEntry {
-                        binding: 0,
-                        visibility: ShaderStages::COMPUTE,
-                        ty: BindingType::StorageTexture {
-                            access: StorageTextureAccess::ReadWrite,
-                            format: TextureFormat::Rgba8Unorm,
-                            view_dimension: TextureViewDimension::D2,
+                    entries: &[
+                        BindGroupLayoutEntry {
+                            binding: 0,
+                            visibility: ShaderStages::COMPUTE,
+                            ty: BindingType::StorageTexture {
+                                access: StorageTextureAccess::ReadWrite,
+                                format: TextureFormat::Rgba8Unorm,
+                                view_dimension: TextureViewDimension::D2,
+                            },
+                            count: None,
                         },
-                        count: None,
-                    }],
+                        // BindGroupLayoutEntry {
+                        //     binding: 1,
+                        //     visibility: ShaderStages::COMPUTE,
+                        //     ty: BindingType::StorageTexture {
+                        //         access: StorageTextureAccess::ReadWrite,
+                        //         format: TextureFormat::Rgba8Unorm,
+                        //         view_dimension: TextureViewDimension::D2,
+                        //     },
+                        //     count: None,
+                        // },
+                        // BindGroupLayoutEntry {
+                        //     binding: 2,
+                        //     visibility: ShaderStages::COMPUTE,
+                        //     ty: BindingType::StorageTexture {
+                        //         access: StorageTextureAccess::ReadWrite,
+                        //         format: TextureFormat::Rgba8Unorm,
+                        //         view_dimension: TextureViewDimension::D2,
+                        //     },
+                        //     count: None,
+                        // },
+                        // BindGroupLayoutEntry {
+                        //     binding: 3,
+                        //     visibility: ShaderStages::COMPUTE,
+                        //     ty: BindingType::Buffer {
+                        //         ty: BufferBindingType::Uniform,
+                        //         has_dynamic_offset: false,
+                        //         min_binding_size: None, // TODO: prevent draw time evaluation
+                        //     },
+                        //     count: None,
+                        // },
+                    ],
                 });
+
         let shader = world
             .resource::<AssetServer>()
             .load("shaders/neat.wgsl");
+
         let pipeline_cache = world.resource::<PipelineCache>();
         let init_pipeline = pipeline_cache.queue_compute_pipeline(ComputePipelineDescriptor {
             label: None,
@@ -234,6 +323,7 @@ impl FromWorld for NeatPipeline {
             shader_defs: vec![],
             entry_point: Cow::from("init"),
         });
+
         let update_pipeline = pipeline_cache.queue_compute_pipeline(ComputePipelineDescriptor {
             label: None,
             layout: vec![texture_bind_group_layout.clone()],
