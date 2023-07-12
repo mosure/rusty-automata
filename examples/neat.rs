@@ -52,6 +52,7 @@ use bevy::{
 
 use rusty_automata::{
     RustyAutomataApp,
+    noise::NoisePlugin,
     uaf::UafPlugin,
     utils::setup_hooks,
 };
@@ -66,6 +67,7 @@ fn example_app() {
     App::new()
         .add_plugin(RustyAutomataApp::default())
         .add_plugin(NeatComputePlugin)
+        .add_plugin(NoisePlugin)
         .add_plugin(UafPlugin)
         .add_startup_system(setup)
         .run();
@@ -87,8 +89,8 @@ fn setup(
     let mut activations = Image::new_fill(
         field_size,
         TextureDimension::D2,
-        &[0, 0, 0, 255],
-        TextureFormat::Rgba8Unorm,
+        &[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        TextureFormat::Rgba32Float,
     );
     activations.texture_descriptor.usage = TextureUsages::COPY_DST | TextureUsages::STORAGE_BINDING | TextureUsages::TEXTURE_BINDING;
     let activations = images.add(activations);
@@ -96,14 +98,14 @@ fn setup(
     let mut nodes = Image::new_fill(
         field_size,
         TextureDimension::D2,
-        &[0, 0, 0, 255],
-        TextureFormat::Rgba8Unorm,
+        &[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        TextureFormat::Rgba32Float,
     );
     nodes.texture_descriptor.usage = TextureUsages::COPY_DST | TextureUsages::STORAGE_BINDING | TextureUsages::TEXTURE_BINDING;
     let nodes = images.add(nodes);
 
 
-    let edge_neighborhood: u32 = 8;
+    let edge_neighborhood: u32 = 4;
 
     // 2D to assist cache locality
     let edges_size = Extent3d {
@@ -115,21 +117,19 @@ fn setup(
     let mut edges = Image::new_fill(
         edges_size,
         TextureDimension::D2,
-        &[0, 0, 0, 255],
-        TextureFormat::Rgba8Unorm,
+        &[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        TextureFormat::Rgba32Float,
     );
     edges.texture_descriptor.usage = TextureUsages::COPY_DST | TextureUsages::STORAGE_BINDING | TextureUsages::TEXTURE_BINDING;
     let edges = images.add(edges);
 
-
     commands.insert_resource(NeatField {
-        activations,
-        edges,
+        activations: activations.clone(),
+        edges: edges.clone(),
         nodes: nodes.clone(),
         edge_neighborhood,
         size: (field_size.width, field_size.height),
     });
-
 
     commands.spawn(SpriteBundle {
         sprite: Sprite {
@@ -152,9 +152,9 @@ impl Plugin for NeatComputePlugin {
         let render_app = app.sub_app_mut(RenderApp);
         render_app
             .init_resource::<NeatPipeline>()
-            //.init_resource::<NeatUniformBuffer>()
-            .add_system(queue_bind_group.in_set(RenderSet::Queue));
-            //.add_system(prepare_neat_uniforms.in_set(RenderSet::Prepare));
+            .init_resource::<NeatUniformBuffer>()
+            .add_system(queue_bind_group.in_set(RenderSet::Queue))
+            .add_system(prepare_neat_uniforms.in_set(RenderSet::Prepare));
 
         let mut render_graph = render_app.world.resource_mut::<RenderGraph>();
         // TODO: add cli args to NeatNode::default()
@@ -183,27 +183,27 @@ struct NeatField {
 // }
 
 
-// #[derive(Clone, Default, ShaderType)]
-// pub struct NeatUniform {
-//     edge_neighborhood: u32,
-// }
+#[derive(Clone, Default, ShaderType)]
+pub struct NeatUniform {
+    edge_neighborhood: u32,
+}
 
-// #[derive(Resource, Default)]
-// pub struct NeatUniformBuffer {
-//     pub buffer: UniformBuffer<NeatUniform>,
-// }
+#[derive(Resource, Default)]
+pub struct NeatUniformBuffer {
+    pub buffer: UniformBuffer<NeatUniform>,
+}
 
-// fn prepare_neat_uniforms(
-//     render_device: Res<RenderDevice>,
-//     render_queue: Res<RenderQueue>,
-//     mut uniform_buffer: ResMut<NeatUniformBuffer>,
-//     neat_field: Res<NeatField>,
-// ) {
-//     let mut buffer = uniform_buffer.buffer.get_mut();
-//     buffer.edge_neighborhood = neat_field.edge_neighborhood;
+fn prepare_neat_uniforms(
+    render_device: Res<RenderDevice>,
+    render_queue: Res<RenderQueue>,
+    mut uniform_buffer: ResMut<NeatUniformBuffer>,
+    neat_field: Res<NeatField>,
+) {
+    let mut buffer = uniform_buffer.buffer.get_mut();
+    buffer.edge_neighborhood = neat_field.edge_neighborhood;
 
-//     uniform_buffer.buffer.write_buffer(&render_device, &render_queue);
-// }
+    uniform_buffer.buffer.write_buffer(&render_device, &render_queue);
+}
 
 
 #[derive(Resource)]
@@ -215,7 +215,7 @@ fn queue_bind_group(
     gpu_images: Res<RenderAssets<Image>>,
     neat_field: Res<NeatField>,
     render_device: Res<RenderDevice>,
-    //uniform_buffer: ResMut<NeatUniformBuffer>,
+    uniform_buffer: ResMut<NeatUniformBuffer>,
 ) {
     let bind_group = render_device.create_bind_group(&BindGroupDescriptor {
         label: None,
@@ -224,25 +224,25 @@ fn queue_bind_group(
             BindGroupEntry {
                 binding: 0,
                 resource: BindingResource::TextureView(
-                    &gpu_images[&neat_field.nodes].texture_view // TODO: change to activations
+                    &gpu_images[&neat_field.activations].texture_view
                 ),
             },
-            // BindGroupEntry {
-            //     binding: 1,
-            //     resource: BindingResource::TextureView(
-            //         &gpu_images[&neat_field.edges].texture_view
-            //     ),
-            // },
-            // BindGroupEntry {
-            //     binding: 2,
-            //     resource: BindingResource::TextureView(
-            //         &gpu_images[&neat_field.nodes].texture_view
-            //     ),
-            // },
-            // BindGroupEntry {
-            //     binding: 3,
-            //     resource: uniform_buffer.buffer.binding().unwrap(),
-            // }
+            BindGroupEntry {
+                binding: 1,
+                resource: BindingResource::TextureView(
+                    &gpu_images[&neat_field.edges].texture_view
+                ),
+            },
+            BindGroupEntry {
+                binding: 2,
+                resource: BindingResource::TextureView(
+                    &gpu_images[&neat_field.nodes].texture_view
+                ),
+            },
+            BindGroupEntry {
+                binding: 3,
+                resource: uniform_buffer.buffer.binding().unwrap(),
+            }
         ],
     });
 
@@ -272,41 +272,41 @@ impl FromWorld for NeatPipeline {
                             visibility: ShaderStages::COMPUTE,
                             ty: BindingType::StorageTexture {
                                 access: StorageTextureAccess::ReadWrite,
-                                format: TextureFormat::Rgba8Unorm,
+                                format: TextureFormat::Rgba32Float,
                                 view_dimension: TextureViewDimension::D2,
                             },
                             count: None,
                         },
-                        // BindGroupLayoutEntry {
-                        //     binding: 1,
-                        //     visibility: ShaderStages::COMPUTE,
-                        //     ty: BindingType::StorageTexture {
-                        //         access: StorageTextureAccess::ReadWrite,
-                        //         format: TextureFormat::Rgba8Unorm,
-                        //         view_dimension: TextureViewDimension::D2,
-                        //     },
-                        //     count: None,
-                        // },
-                        // BindGroupLayoutEntry {
-                        //     binding: 2,
-                        //     visibility: ShaderStages::COMPUTE,
-                        //     ty: BindingType::StorageTexture {
-                        //         access: StorageTextureAccess::ReadWrite,
-                        //         format: TextureFormat::Rgba8Unorm,
-                        //         view_dimension: TextureViewDimension::D2,
-                        //     },
-                        //     count: None,
-                        // },
-                        // BindGroupLayoutEntry {
-                        //     binding: 3,
-                        //     visibility: ShaderStages::COMPUTE,
-                        //     ty: BindingType::Buffer {
-                        //         ty: BufferBindingType::Uniform,
-                        //         has_dynamic_offset: false,
-                        //         min_binding_size: None, // TODO: prevent draw time evaluation
-                        //     },
-                        //     count: None,
-                        // },
+                        BindGroupLayoutEntry {
+                            binding: 1,
+                            visibility: ShaderStages::COMPUTE,
+                            ty: BindingType::StorageTexture {
+                                access: StorageTextureAccess::ReadWrite,
+                                format: TextureFormat::Rgba32Float,
+                                view_dimension: TextureViewDimension::D2,
+                            },
+                            count: None,
+                        },
+                        BindGroupLayoutEntry {
+                            binding: 2,
+                            visibility: ShaderStages::COMPUTE,
+                            ty: BindingType::StorageTexture {
+                                access: StorageTextureAccess::ReadWrite,
+                                format: TextureFormat::Rgba32Float,
+                                view_dimension: TextureViewDimension::D2,
+                            },
+                            count: None,
+                        },
+                        BindGroupLayoutEntry {
+                            binding: 3,
+                            visibility: ShaderStages::COMPUTE,
+                            ty: BindingType::Buffer {
+                                ty: BufferBindingType::Uniform,
+                                has_dynamic_offset: false,
+                                min_binding_size: None,
+                            },
+                            count: None,
+                        },
                     ],
                 });
 

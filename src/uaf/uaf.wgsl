@@ -14,3 +14,16 @@ fn fUAF(x: f32, a: f32, b: f32, c: f32, d: f32, e: f32) -> f32 {
 
     return p3 - p4 + e;
 }
+
+
+struct UafParameters {
+    a: f32,
+    b: f32,
+    c: f32,
+    d: f32,
+    e: f32,
+};
+
+fn fUAFp(x: f32, params: UafParameters) -> f32 {
+    return fUAF(x, params.a, params.b, params.c, params.d, params.e);
+}
