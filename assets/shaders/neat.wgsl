@@ -37,8 +37,8 @@ fn init(
 
     let activation = vec4<f32>(
         -abs(uaf_a),
-        abs(uaf_b),
-        abs(uaf_c) * 3.5,
+        abs(uaf_b) / 1000.0,
+        abs(uaf_c),
         abs(uaf_d),
     );
     let node = vec4<f32>(
@@ -71,7 +71,7 @@ fn init(
 
             let edge_weight = simplexNoise2(location_f32 * vec2<f32>(13.0 + -23.0 * f32(x), 17.0 + -11.0 * f32(y))) * 12.5;
 
-            let max_radius = 30.0;
+            let max_radius = 25.0;
             let edge_offset = vec2<f32>(
                 f32(xr) % max_radius,
                 f32(yr) % max_radius,
@@ -142,7 +142,7 @@ fn update(
     var next_state = fUAFp(pre_activation, uaf_params);
 
     let delta = abs(current_state.x - next_state);
-    if (delta > 2.0) {
+    if (delta > 1.2) {
         next_state = 0.0;
     }
 
