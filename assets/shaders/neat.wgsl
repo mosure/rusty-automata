@@ -37,8 +37,8 @@ fn init(
 
     let activation = vec4<f32>(
         -abs(uaf_a),
-        abs(uaf_b) / 2.0,
-        abs(uaf_c) * 2.0,
+        abs(uaf_b),
+        abs(uaf_c) * 3.5,
         abs(uaf_d),
     );
     let node = vec4<f32>(
