@@ -26,6 +26,7 @@ fn init(
 ) {
     let location = vec2<i32>(i32(invocation_id.x), i32(invocation_id.y));
     let location_f32 = vec2<f32>(location);
+    let edge_location = location * i32(uniforms.edge_neighborhood);
 
     let initial_state = 0.0;//simplexNoise2(location_f32);
 
@@ -38,7 +39,7 @@ fn init(
     let activation = vec4<f32>(
         -abs(uaf_a),
         abs(uaf_b) / 1000.0,
-        abs(uaf_c),
+        -abs(uaf_c),
         abs(uaf_d),
     );
     let node = vec4<f32>(
@@ -69,9 +70,9 @@ fn init(
             let xr = simplexNoise2(location_f32 * 10.0 * vec2<f32>(23.0 + f32(x), -23.0 + 12.0 * f32(y))) * 120.0;
             let yr = simplexNoise2(location_f32 * 10.0 * vec2<f32>(-12.0 + 27.0 * f32(x), 72.0 + -25.0 * f32(y))) * 120.0;
 
-            let edge_weight = simplexNoise2(location_f32 * vec2<f32>(13.0 + -23.0 * f32(x), 17.0 + -11.0 * f32(y))) * 12.5;
+            let edge_weight = simplexNoise2(location_f32 * vec2<f32>(13.0 + -23.0 * f32(x), 17.0 + -11.0 * f32(y))) * 12.0;
 
-            let max_radius = 25.0;
+            let max_radius = 35.0;
             let edge_offset = vec2<f32>(
                 f32(xr) % max_radius,
                 f32(yr) % max_radius,
@@ -85,7 +86,7 @@ fn init(
 
             textureStore(
                 edges,
-                location + offset,
+                edge_location + offset,
                 edge
             );
         }
@@ -98,6 +99,7 @@ fn update(
     @builtin(global_invocation_id) invocation_id: vec3<u32>,
 ) {
     let location = vec2<i32>(i32(invocation_id.x), i32(invocation_id.y));
+    let edge_location = location * i32(uniforms.edge_neighborhood);
 
     let activation = textureLoad(
         activations,
@@ -116,7 +118,7 @@ fn update(
 
             let edge = textureLoad(
                 edges,
-                location + offset,
+                edge_location + offset,
             );
             let edge_weight = edge.z;
 
@@ -153,7 +155,7 @@ fn update(
         location,
         vec4<f32>(
             next_state,
-            delta,
+            delta / 2.0, // TODO: add visual layer (divided by 2.0 for color)
             current_state.z,
             1.0,
         )
