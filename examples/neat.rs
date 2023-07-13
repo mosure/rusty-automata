@@ -16,7 +16,6 @@ use bevy::{
             RenderQueue,
         },
         render_resource::{
-            AsBindGroup,
             BindGroup,
             BindGroupDescriptor,
             BindGroupEntry,
@@ -25,15 +24,11 @@ use bevy::{
             BindGroupLayoutEntry,
             BindingResource,
             BindingType,
-            BufferBinding,
             BufferBindingType,
-            BufferInitDescriptor,
-            BufferUsages,
             CachedComputePipelineId,
             CachedPipelineState,
             ComputePassDescriptor,
             ComputePipelineDescriptor,
-            DynamicUniformBuffer,
             Extent3d,
             PipelineCache,
             ShaderStages,
@@ -105,7 +100,7 @@ fn setup(
     let nodes = images.add(nodes);
 
 
-    let edge_neighborhood: u32 = 4;
+    let edge_neighborhood: u32 = 5;
 
     // 2D to assist cache locality
     let edges_size = Extent3d {
@@ -186,6 +181,7 @@ struct NeatField {
 #[derive(Clone, Default, ShaderType)]
 pub struct NeatUniform {
     edge_neighborhood: u32,
+    // TODO: add time uniform (or random seed)
 }
 
 #[derive(Resource, Default)]

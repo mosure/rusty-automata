@@ -19,21 +19,6 @@ struct NeatUniforms {
 var<uniform> uniforms: NeatUniforms;
 
 
-fn hash(value: u32) -> u32 {
-    var state = value;
-    state = state ^ 2747636419u;
-    state = state * 2654435769u;
-    state = state ^ state >> 16u;
-    state = state * 2654435769u;
-    state = state ^ state >> 16u;
-    state = state * 2654435769u;
-    return state;
-}
-
-fn randomFloat(value: u32) -> f32 {
-    return f32(hash(value)) / 4294967295.0;
-}
-
 @compute @workgroup_size(8, 8, 1)
 fn init(
     @builtin(global_invocation_id) invocation_id: vec3<u32>,
@@ -42,7 +27,7 @@ fn init(
     let location = vec2<i32>(i32(invocation_id.x), i32(invocation_id.y));
     let location_f32 = vec2<f32>(location);
 
-    let initial_state = simplexNoise2(location_f32);
+    let initial_state = 0.0;//simplexNoise2(location_f32);
 
     let uaf_a = simplexNoise2(location_f32 * vec2<f32>(-1.0, -2.0));
     let uaf_b = simplexNoise2(location_f32 * vec2<f32>(11.0, 31.0));
@@ -52,8 +37,8 @@ fn init(
 
     let activation = vec4<f32>(
         -abs(uaf_a),
-        uaf_b,
-        -abs(uaf_c),
+        abs(uaf_b) / 1000.0,
+        abs(uaf_c),
         abs(uaf_d),
     );
     let node = vec4<f32>(
@@ -81,17 +66,17 @@ fn init(
         for (var y = 0u; y < uniforms.edge_neighborhood; y = y + 1u) {
             let offset = vec2<i32>(vec2<u32>(x, y));
 
-            let xr = simplexNoise2(location_f32 * vec2<f32>(23.0 * 34.0 * f32(x), -23.0 + 12.0 * f32(y))) * 100.0;
-            let yr = simplexNoise2(location_f32 * vec2<f32>(-12.0 * 27.0 * f32(x), 72.0 + 25.0 * f32(y))) * 100.0;
-            let edge_weight = simplexNoise2(location_f32 * vec2<f32>(13.0 * -23.0 * f32(x), 17.0 + -11.0 * f32(y))) * 9.0;
+            let xr = simplexNoise2(location_f32 * 10.0 * vec2<f32>(23.0 + f32(x), -23.0 + 12.0 * f32(y))) * 120.0;
+            let yr = simplexNoise2(location_f32 * 10.0 * vec2<f32>(-12.0 + 27.0 * f32(x), 72.0 + -25.0 * f32(y))) * 120.0;
 
-            let max_radius = 5.0;
+            let edge_weight = simplexNoise2(location_f32 * vec2<f32>(13.0 + -23.0 * f32(x), 17.0 + -11.0 * f32(y))) * 12.5;
+
+            let max_radius = 25.0;
             let edge_offset = vec2<f32>(
                 f32(xr) % max_radius,
                 f32(yr) % max_radius,
             );
 
-            // basic CA neighborhood
             let edge = vec4<f32>(
                 edge_offset,
                 edge_weight,
@@ -154,7 +139,12 @@ fn update(
         current_state.z,
     );
     let pre_activation = current_state.x + input_sum / pow(f32(uniforms.edge_neighborhood), 2.0);
-    let next_state = fUAFp(pre_activation, uaf_params);
+    var next_state = fUAFp(pre_activation, uaf_params);
+
+    let delta = abs(current_state.x - next_state);
+    if (delta > 1.2) {
+        next_state = 0.0;
+    }
 
     storageBarrier();
 
@@ -163,7 +153,7 @@ fn update(
         location,
         vec4<f32>(
             next_state,
-            0.0,//current_state.x - next_state,
+            delta,
             current_state.z,
             1.0,
         )
