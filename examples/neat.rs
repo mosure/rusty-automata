@@ -129,7 +129,6 @@ fn setup(
         nodes: nodes.clone(),
         edge_neighborhood,
         size: (field_size.width, field_size.height),
-        activation_floor: 57.0,
         max_radius: 35.0,
         max_edge_weight: 12.0,
         manual_init: false,
@@ -189,7 +188,6 @@ struct NeatField {
     nodes: Handle<Image>,
     edge_neighborhood: u32,
     size: (u32, u32),
-    activation_floor: f32,
     max_radius: f32,
     max_edge_weight: f32,
     manual_init: bool,
@@ -206,9 +204,10 @@ struct NeatField {
 #[derive(Clone, Default, ShaderType)]
 pub struct NeatUniform {
     edge_neighborhood: u32,
-    activation_floor: f32,
     max_radius: f32,
     max_edge_weight: f32,
+    width: u32,
+    height: u32,
     // TODO: add time uniform (or random seed)
 }
 
@@ -226,9 +225,10 @@ fn prepare_neat_uniforms(
     let buffer = uniform_buffer.buffer.get_mut();
 
     buffer.edge_neighborhood = neat_field.edge_neighborhood;
-    buffer.activation_floor = neat_field.activation_floor;
     buffer.max_radius = neat_field.max_radius;
     buffer.max_edge_weight = neat_field.max_edge_weight;
+    buffer.width = neat_field.size.0;
+    buffer.height = neat_field.size.1;
 
     uniform_buffer.buffer.write_buffer(&render_device, &render_queue);
 }

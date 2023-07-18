@@ -9,16 +9,17 @@ var nodes: texture_storage_2d<rgba32float, read_write>;
 
 
 // TODO: 4th channel for synapse decay or mobility?
+// TODO: add visualizer for edge (absolute location doesn't view well)
 struct Edge {
-    from_node_offset: vec2<i32>, // TODO: change to from_node and precompute from offset in init stage
+    from_node_location: vec2<i32>,
     weight: f32,
 };
 
 // TODO: add PID (instead of bias?)
 struct State {
     value: f32,
-    velocity: f32,
-    bias: f32,
+    derivative: f32,
+    integral: f32,
 };
 
 
@@ -42,8 +43,8 @@ fn set_edge(location: vec2<i32>, edge: Edge) -> void {
         edges,
         location,
         vec4<f32>(
-            f32(edge.from_node_offset.x),
-            f32(edge.from_node_offset.y),
+            f32(edge.from_node_location.x),
+            f32(edge.from_node_location.y),
             edge.weight,
             1.0,
         ),
@@ -69,8 +70,8 @@ fn set_state(location: vec2<i32>, state: State) -> void {
         location,
         vec4<f32>(
             state.value,
-            state.velocity,
-            state.bias,
+            state.derivative,
+            state.integral,
             1.0,
         ),
     );
