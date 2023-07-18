@@ -10,8 +10,8 @@ use rusty_automata::{
 
 fn example_app() {
     App::new()
-        .add_plugin(RustyAutomataApp::default())
-        .add_startup_system(help_display_setup)
+        .add_plugins(RustyAutomataApp::default())
+        .add_systems(Startup, help_display_setup)
         .run();
 }
 
@@ -29,7 +29,7 @@ fn help_display_setup(
 ) {
     commands.spawn(NodeBundle {
         style: Style {
-            size: Size::width(Val::Percent(100.0)),
+            width: Val::Percent(100.0),
             align_items: AlignItems::Center,
             justify_content: JustifyContent::Center,
             ..default()

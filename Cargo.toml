@@ -8,7 +8,7 @@ exclude = ["dist", "build", "assets", "credits"]
 
 
 [dependencies]
-bevy = { version = "0.10.1", default-features=false, features = [
+bevy = { version = "0.11.0", default-features=false, features = [
   "animation",
   "bevy_animation",
   "bevy_asset",
@@ -28,9 +28,8 @@ bevy = { version = "0.10.1", default-features=false, features = [
   "zstd",
   "png",
 ]}
-bevy-inspector-egui = "0.18.3"
-bevy_framepace = "0.12.1"
-noisy_bevy = "0.3.0"
+bevy-inspector-egui = "0.19.0"
+num-format = "0.4.4"
 
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]

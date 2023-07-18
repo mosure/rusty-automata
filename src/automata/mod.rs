@@ -10,17 +10,17 @@ use bevy::{
 };
 
 
-const UAF_SHADER_HANDLE: HandleUntyped = HandleUntyped::weak_from_u64(Shader::TYPE_UUID, 61270573934);
+const AUTOMATA_SHADER_HANDLE: HandleUntyped = HandleUntyped::weak_from_u64(Shader::TYPE_UUID, 6712956732940);
 
 #[derive(Default)]
-pub struct UafPlugin;
+pub struct AutomataPlugin;
 
-impl Plugin for UafPlugin {
+impl Plugin for AutomataPlugin {
     fn build(&self, app: &mut App) {
         load_internal_asset!(
             app,
-            UAF_SHADER_HANDLE,
-            "uaf.wgsl",
+            AUTOMATA_SHADER_HANDLE,
+            "automata.wgsl",
             Shader::from_wgsl
         );
     }

@@ -40,10 +40,13 @@ use bevy::{
             TextureViewDimension,
             UniformBuffer,
         },
+        Render,
         RenderApp,
         RenderSet,
     },
 };
+
+use num_format::{Locale, ToFormattedString};
 
 use rusty_automata::{
     RustyAutomataApp,
@@ -60,11 +63,13 @@ const WORKGROUP_SIZE: u32 = 8;
 
 fn example_app() {
     App::new()
-        .add_plugin(RustyAutomataApp::default())
-        .add_plugin(NeatComputePlugin)
-        .add_plugin(NoisePlugin)
-        .add_plugin(UafPlugin)
-        .add_startup_system(setup)
+        .add_plugins((
+            RustyAutomataApp::default(),
+            NeatComputePlugin,
+            NoisePlugin,
+            UafPlugin,
+        ))
+        .add_systems(Startup, setup)
         .run();
 }
 
@@ -109,7 +114,7 @@ fn setup(
         depth_or_array_layers: 1,
     };
 
-    let mut edges = Image::new_fill(
+    let mut edges: Image = Image::new_fill(
         edges_size,
         TextureDimension::D2,
         &[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -124,7 +129,15 @@ fn setup(
         nodes: nodes.clone(),
         edge_neighborhood,
         size: (field_size.width, field_size.height),
+        activation_floor: 57.0,
+        max_radius: 35.0,
+        max_edge_weight: 12.0,
+        manual_init: false,
     });
+
+    println!("field_size: {:?}x{:?}", field_size.width, field_size.height);
+    let parameters = field_size.width * field_size.height * 7 + edge_neighborhood * edge_neighborhood * 4;
+    println!("parameters: {}", parameters.to_formatted_string(&Locale::en));
 
     commands.spawn(SpriteBundle {
         sprite: Sprite {
@@ -142,14 +155,16 @@ pub struct NeatComputePlugin;
 
 impl Plugin for NeatComputePlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugin(ExtractResourcePlugin::<NeatField>::default());
+        app.add_plugins(ExtractResourcePlugin::<NeatField>::default());
 
         let render_app = app.sub_app_mut(RenderApp);
-        render_app
-            .init_resource::<NeatPipeline>()
-            .init_resource::<NeatUniformBuffer>()
-            .add_system(queue_bind_group.in_set(RenderSet::Queue))
-            .add_system(prepare_neat_uniforms.in_set(RenderSet::Prepare));
+        render_app.add_systems(
+            Render,
+            (
+                prepare_neat_uniforms.in_set(RenderSet::Prepare),
+                queue_bind_group.in_set(RenderSet::Queue),
+            )
+        );
 
         let mut render_graph = render_app.world.resource_mut::<RenderGraph>();
         // TODO: add cli args to NeatNode::default()
@@ -158,6 +173,12 @@ impl Plugin for NeatComputePlugin {
             "neat",
             bevy::render::main_graph::node::CAMERA_DRIVER,
         );
+    }
+
+    fn finish(&self, app: &mut App) {
+        let render_app = app.sub_app_mut(RenderApp);
+        render_app.init_resource::<NeatPipeline>();
+        render_app.init_resource::<NeatUniformBuffer>();
     }
 }
 
@@ -168,6 +189,10 @@ struct NeatField {
     nodes: Handle<Image>,
     edge_neighborhood: u32,
     size: (u32, u32),
+    activation_floor: f32,
+    max_radius: f32,
+    max_edge_weight: f32,
+    manual_init: bool,
 }
 
 // #[derive(Resource, Clone, ExtractResource)]
@@ -181,6 +206,9 @@ struct NeatField {
 #[derive(Clone, Default, ShaderType)]
 pub struct NeatUniform {
     edge_neighborhood: u32,
+    activation_floor: f32,
+    max_radius: f32,
+    max_edge_weight: f32,
     // TODO: add time uniform (or random seed)
 }
 
@@ -195,8 +223,12 @@ fn prepare_neat_uniforms(
     mut uniform_buffer: ResMut<NeatUniformBuffer>,
     neat_field: Res<NeatField>,
 ) {
-    let mut buffer = uniform_buffer.buffer.get_mut();
+    let buffer = uniform_buffer.buffer.get_mut();
+
     buffer.edge_neighborhood = neat_field.edge_neighborhood;
+    buffer.activation_floor = neat_field.activation_floor;
+    buffer.max_radius = neat_field.max_radius;
+    buffer.max_edge_weight = neat_field.max_edge_weight;
 
     uniform_buffer.buffer.write_buffer(&render_device, &render_queue);
 }
@@ -245,6 +277,7 @@ fn queue_bind_group(
     commands.insert_resource(NeatBindGroup(bind_group));
 
     pipeline.size = neat_field.size;
+    pipeline.manual_init = neat_field.manual_init;
 }
 
 #[derive(Resource)]
@@ -253,6 +286,7 @@ pub struct NeatPipeline {
     init_pipeline: CachedComputePipelineId,
     update_pipeline: CachedComputePipelineId,
     size: (u32, u32),
+    manual_init: bool,
 }
 
 impl FromWorld for NeatPipeline {
@@ -334,6 +368,7 @@ impl FromWorld for NeatPipeline {
             init_pipeline,
             update_pipeline,
             size: (0, 0),
+            manual_init: false,
         }
     }
 }
@@ -377,6 +412,10 @@ impl render_graph::Node for NeatNode {
                 }
             }
             NeatState::Update => {}
+        }
+
+        if pipeline.manual_init {
+            self.state = NeatState::Init;
         }
     }
 

@@ -31,10 +31,10 @@ use bevy_inspector_egui::{
         AssetInspectorPlugin,
     },
 };
-use noisy_bevy::NoisyShaderPlugin;
 
 use rusty_automata::{
     RustyAutomataApp,
+    noise::NoisePlugin,
     plot::PlotPlugin,
     uaf::UafPlugin,
     utils::setup_hooks,
@@ -43,14 +43,16 @@ use rusty_automata::{
 
 fn example_app() {
     App::new()
-        .add_plugin(RustyAutomataApp::default())
-        .add_plugin(NoisyShaderPlugin)
-        .add_plugin(PlotPlugin)
-        .add_plugin(UafPlugin)
-        .add_plugin(Material2dPlugin::<UafMaterial>::default())
+        .add_plugins((
+            RustyAutomataApp::default(),
+            NoisePlugin,
+            PlotPlugin,
+            UafPlugin,
+            Material2dPlugin::<UafMaterial>::default(),
+        ))
         .register_asset_reflect::<UafMaterial>()
-        .add_plugin(AssetInspectorPlugin::<UafMaterial>::default())
-        .add_startup_system(setup_screen)
+        .add_plugins(AssetInspectorPlugin::<UafMaterial>::default())
+        .add_systems(Startup, setup_screen)
         .run();
 }
 
@@ -96,7 +98,7 @@ fn setup_screen(
 
 
 // TODO: figure out why material asset handle ID is displayed instead of the material name
-#[derive(AsBindGroup, Clone, Debug, FromReflect, InspectorOptions, Reflect, TypeUuid)]
+#[derive(AsBindGroup, Clone, Debug, InspectorOptions, Reflect, TypeUuid)]
 #[reflect(Debug, Default, InspectorOptions)]
 #[uuid = "ac2f08eb-67fa-23f1-a908-51571ea332d5"]
 #[uniform(0, UafMaterialUniform)]
