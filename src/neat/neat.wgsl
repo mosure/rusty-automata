@@ -5,16 +5,7 @@
 #import rusty_automata::uaf                     fUAFp, UafParameters
 
 
-// TODO: rust bind group for neat
-struct NeatUniforms {
-    max_radius: f32,
-    max_edge_weight: f32,
-};
-
 @group(1) @binding(0)
-var<uniform> neat_uniforms: NeatUniforms;
-
-@group(1) @binding(1)
 var uaf_activations: texture_storage_2d<rgba32float, read_write>;
 
 

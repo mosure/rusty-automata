@@ -1,7 +1,4 @@
 #import rusty_automata::neat                    compute_next_neat_state, init_neat_field
-#import rusty_automata::noise                   simplex_2d
-#import rusty_automata::uaf                     UafParameters
-
 
 @compute @workgroup_size(4, 4, 1)
 fn init(
@@ -11,7 +8,6 @@ fn init(
     let location = vec2<i32>(i32(invocation_id.x), i32(invocation_id.y));
     init_neat_field(location);
 }
-
 
 @compute @workgroup_size(4, 4, 1)
 fn update(

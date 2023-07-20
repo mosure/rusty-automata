@@ -9,14 +9,23 @@ struct AutomataUniforms {
     height: u32,
 };
 
-@group(0) @binding(0)
-var<uniform> automata_uniforms: AutomataUniforms;
+struct AutomataInitUniforms {
+    max_radius: f32,
+    max_edge_weight: f32,
+};
 
-@group(0) @binding(1)
+
+@group(0) @binding(0)
 var edges: texture_storage_2d<rgba32float, read_write>;
 
-@group(0) @binding(2)
+@group(0) @binding(1)
 var nodes: texture_storage_2d<rgba32float, read_write>;
+
+@group(0) @binding(2)
+var<uniform> automata_uniforms: AutomataUniforms;
+
+@group(0) @binding(3)
+var<uniform> automata_init_uniforms: AutomataInitUniforms;
 
 
 // TODO: 4th channel for synapse decay or mobility?
@@ -182,11 +191,11 @@ fn init_edges(
             let xr = simplex_2d(edge_location_f32 + vec2<f32>(23.0 + f32(x), -23.0 + 12.0 * f32(y))) * 120.0;
             let yr = simplex_2d(-edge_location_f32 + vec2<f32>(-12.0 + 27.0 * f32(x), 72.0 + -25.0 * f32(y))) * 120.0;
 
-            let edge_weight = simplex_2d(edge_location_f32 + vec2<f32>(13.0 + -23.0 * f32(x), 17.0 + -11.0 * f32(y))) * neat_uniforms.max_edge_weight;
+            let edge_weight = simplex_2d(edge_location_f32 + vec2<f32>(13.0 + -23.0 * f32(x), 17.0 + -11.0 * f32(y))) * automata_init_uniforms.max_edge_weight;
 
             let edge_offset = vec2<f32>(
-                f32(xr) % neat_uniforms.max_radius * ring_factor,
-                f32(yr) % neat_uniforms.max_radius * ring_factor,
+                f32(xr) % automata_init_uniforms.max_radius * ring_factor,
+                f32(yr) % automata_init_uniforms.max_radius * ring_factor,
             );
 
             let from_node_location = location + vec2<i32>(edge_offset);
