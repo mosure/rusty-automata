@@ -5,6 +5,13 @@ use bevy::{
         DiagnosticsStore,
         FrameTimeDiagnosticsPlugin,
     },
+    render::{
+        RenderPlugin,
+        settings::{
+            WgpuLimits,
+            WgpuSettings,
+        },
+    },
 };
 // TODO: update to latest framepace
 // use bevy_framepace::{
@@ -50,6 +57,15 @@ impl Plugin for RustyAutomataApp {
         app.add_plugins(
             DefaultPlugins
             .set(ImagePlugin::default_nearest())
+            .set(RenderPlugin {
+                wgpu_settings: WgpuSettings {
+                    limits: WgpuLimits {
+                        max_texture_dimension_2d: 32768,
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                }
+            })
             .set(WindowPlugin {
                 primary_window: Some(Window {
                     fit_canvas_to_parent: false,
