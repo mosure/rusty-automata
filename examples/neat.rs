@@ -58,7 +58,7 @@ use rusty_automata::{
 use std::borrow::Cow;
 
 
-const WORKGROUP_SIZE: u32 = 8;
+const WORKGROUP_SIZE: u32 = 4;
 
 
 fn example_app() {

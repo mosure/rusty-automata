@@ -54,7 +54,7 @@ impl Plugin for RustyAutomataApp {
                 primary_window: Some(Window {
                     fit_canvas_to_parent: false,
                     mode: bevy::window::WindowMode::Fullscreen,
-                    present_mode: bevy::window::PresentMode::AutoVsync,
+                    present_mode: bevy::window::PresentMode::AutoNoVsync,
                     prevent_default_event_handling: false,
                     resolution: (self.width, self.height).into(),
                     title: self.name.clone(),
