@@ -102,6 +102,8 @@ impl Plugin for NeatPlugin {
             "neat",
             bevy::render::main_graph::node::CAMERA_DRIVER,
         );
+
+        // TODO: register UI editable types
     }
 
     fn finish(&self, app: &mut App) {

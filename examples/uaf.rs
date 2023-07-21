@@ -1,12 +1,8 @@
 use bevy::{
     prelude::*,
-    reflect::{
-        TypeUuid
-    },
+    reflect::TypeUuid,
     render::{
-        render_asset::{
-            RenderAssets,
-        },
+        render_asset::RenderAssets,
         render_resource::{
             AsBindGroup,
             AsBindGroupShaderType,
@@ -24,12 +20,8 @@ use bevy::{
 use bevy_inspector_egui::{
     InspectorOptions,
     inspector_options::std_options::NumberDisplay,
-    prelude::{
-        ReflectInspectorOptions,
-    },
-    quick::{
-        AssetInspectorPlugin,
-    },
+    prelude::ReflectInspectorOptions,
+    quick::AssetInspectorPlugin,
 };
 
 use rusty_automata::{
