@@ -60,7 +60,7 @@ impl Plugin for RustyAutomataApp {
             .set(RenderPlugin {
                 wgpu_settings: WgpuSettings {
                     limits: WgpuLimits {
-                        max_texture_dimension_2d: 32768,
+                        max_texture_dimension_2d: 16384, // TODO: use 2d texture array for tiling fields
                         ..Default::default()
                     },
                     ..Default::default()
@@ -70,7 +70,7 @@ impl Plugin for RustyAutomataApp {
                 primary_window: Some(Window {
                     fit_canvas_to_parent: false,
                     mode: bevy::window::WindowMode::Fullscreen,
-                    present_mode: bevy::window::PresentMode::AutoNoVsync,
+                    present_mode: bevy::window::PresentMode::AutoVsync,
                     prevent_default_event_handling: false,
                     resolution: (self.width, self.height).into(),
                     title: self.name.clone(),
@@ -79,7 +79,9 @@ impl Plugin for RustyAutomataApp {
                 ..default()
             })
         );
-        app.add_plugins(AutomataPlugin::default());
+        app.add_plugins(
+            AutomataPlugin::default(),
+        );
 
         if self.esc_close {
             app.add_systems(Update, esc_close);
