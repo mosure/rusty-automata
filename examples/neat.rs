@@ -61,6 +61,7 @@ fn setup(
     commands.insert_resource(NeatField::new(field_size, &mut images));
 
     // TODO: add visual remap layer via fragment shader
+    // TODO: use bevy_pancam for camera controls https://github.com/johanhelsing/bevy_pancam
     commands.spawn(Camera2dBundle::default());
 
     println!("field_size: {:?}x{:?}", field_size.width, field_size.height);
