@@ -40,7 +40,7 @@ fn get_uaf_params(
         activation.y,
         activation.z,
         activation.w,
-        1.0,
+        0.0, // TODO: bind UAF.e to a texture (or uniform 'noise-floor'?)
     );
 }
 
@@ -67,11 +67,7 @@ fn compute_next_neat_state(
     let x = pre_activation(location);
     let uaf_params = get_uaf_params(location);
 
-    var next_value = 0.0;//fUAFp(x, uaf_params);
-
-    if abs(x) == 0.0 {
-        next_value = 1.0;
-    }
+    var next_value = fUAFp(x, uaf_params);
 
     set_next_state(location, next_value);
 }

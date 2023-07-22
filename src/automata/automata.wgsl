@@ -13,6 +13,7 @@ struct AutomataUniforms {
 };
 
 
+// TODO: separate init and update shaders so read-only textures can be bound as readonly
 @group(0) @binding(0)
 var edges: texture_storage_2d_array<rgba32float, read_write>;
 
