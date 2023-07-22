@@ -1,11 +1,11 @@
 
-#import rusty_automata::plot
-#import rusty_automata::uaf
+#import rusty_automata::noise                   simplex_2d
+#import rusty_automata::plot                    draw_curve, draw_grid
+#import rusty_automata::uaf                     fUAF
 
-#import noisy_bevy::prelude
-
-#import bevy_sprite::mesh2d_view_bindings
-#import bevy_pbr::utils
+#import bevy_sprite::mesh2d_vertex_output       MeshVertexOutput
+#import bevy_sprite::mesh2d_view_bindings       globals, view
+#import bevy_pbr::utils                         coords_to_viewport_uv
 
 
 struct UafMaterial {
@@ -24,10 +24,9 @@ const Pi: f32 = 3.14159265359;
 
 @fragment
 fn fragment(
-    @builtin(position) position: vec4<f32>,
-    #import bevy_sprite::mesh2d_vertex_output
+    in: MeshVertexOutput,
 ) -> @location(0) vec4<f32> {
-    var uv = coords_to_viewport_uv(position.xy, view.viewport);
+    var uv = in.uv;
     uv = vec2<f32>(uv.x, 1.0 - uv.y);
 
     let aspect: f32 = view.viewport.z / view.viewport.w;
@@ -51,22 +50,22 @@ fn fragment(
     let n1 = mix(
         -2.0,
         2.0,
-        simplex_noise_2d(vec2(t * 0.5, 10.1))
+        simplex_2d(vec2(t * 0.5, 10.1))
     );
     let n2 = mix(
         -0.8,
         0.8,
-        simplex_noise_2d(vec2(t, -345.6))
+        simplex_2d(vec2(t, -345.6))
     );
     let n3 = mix(
         -1.0,
         1.0,
-        simplex_noise_2d(vec2(t, 400.3))
+        simplex_2d(vec2(t, 400.3))
     );
     let n4 = mix(
         -2.0,
         2.0,
-        simplex_noise_2d(vec2(t * 0.5, 800.6))
+        simplex_2d(vec2(t * 0.5, 800.6))
     );
 
     let result = fUAF(

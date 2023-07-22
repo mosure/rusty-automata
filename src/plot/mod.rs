@@ -10,7 +10,7 @@ use bevy::{
 };
 
 
-const PLOT_SHADER_HANDLE: HandleUntyped = HandleUntyped::weak_from_u64(Shader::TYPE_UUID, 13513318664863112);
+const PLOT_SHADER_HANDLE: HandleUntyped = HandleUntyped::weak_from_u64(Shader::TYPE_UUID, 809823407934);
 
 #[derive(Default)]
 pub struct PlotPlugin;

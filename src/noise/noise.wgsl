@@ -3,20 +3,20 @@
 
 //  MIT License. © Ian McEwan, Stefan Gustavson, Munrocket, Johan Helsing
 //
-fn mod289(x: vec2<f32>) -> vec2<f32> {
-    return x - floor(x * (1. / 289.)) * 289.;
+fn mod289_2d(x: vec2<f32>) -> vec2<f32> {
+    return x - floor(x * (1.0 / 289.0)) * 289.0;
 }
 
-fn mod289_3(x: vec3<f32>) -> vec3<f32> {
-    return x - floor(x * (1. / 289.)) * 289.;
+fn mod289_3d(x: vec3<f32>) -> vec3<f32> {
+    return x - floor(x * (1.0 / 289.0)) * 289.0;
 }
 
-fn permute3(x: vec3<f32>) -> vec3<f32> {
-    return mod289_3(((x * 34.) + 1.) * x);
+fn permute_3d(x: vec3<f32>) -> vec3<f32> {
+    return mod289_3d(((x * 34.0) + 1.0) * x);
 }
 
 //  MIT License. © Ian McEwan, Stefan Gustavson, Munrocket
-fn simplexNoise2(v: vec2<f32>) -> f32 {
+fn simplex_2d(v: vec2<f32>) -> f32 {
     let C = vec4(
         0.211324865405187, // (3.0-sqrt(3.0))/6.0
         0.366025403784439, // 0.5*(sqrt(3.0)-1.0)
@@ -39,9 +39,9 @@ fn simplexNoise2(v: vec2<f32>) -> f32 {
     x12.y = x12.y - i1.y;
 
     // Permutations
-    i = mod289(i); // Avoid truncation effects in permutation
+    i = mod289_2d(i); // Avoid truncation effects in permutation
 
-    var p = permute3(permute3(i.y + vec3(0., i1.y, 1.)) + i.x + vec3(0., i1.x, 1.));
+    var p = permute_3d(permute_3d(i.y + vec3(0., i1.y, 1.)) + i.x + vec3(0., i1.x, 1.));
     var m = max(0.5 - vec3(dot(x0, x0), dot(x12.xy, x12.xy), dot(x12.zw, x12.zw)), vec3(0.));
     m *= m;
     m *= m;
@@ -67,42 +67,60 @@ fn simplexNoise2(v: vec2<f32>) -> f32 {
 //  <https://www.shadertoy.com/view/Xd23Dh>
 //  by Inigo Quilez
 //
-fn hash23(p: vec2<f32>) -> vec3<f32> {
-  let q = vec3<f32>(dot(p, vec2<f32>(127.1, 311.7)),
-      dot(p, vec2<f32>(269.5, 183.3)),
-      dot(p, vec2<f32>(419.2, 371.9)));
-  return fract(sin(q) * 43758.5453);
+fn hash_23_(p: vec2<f32>) -> vec3<f32> {
+    let q = vec3<f32>(dot(p, vec2<f32>(127.1, 311.7)),
+        dot(p, vec2<f32>(269.5, 183.3)),
+        dot(p, vec2<f32>(419.2, 371.9)));
+    return fract(sin(q) * 43758.5453);
 }
 
-fn voroNoise2(x: vec2<f32>, u: f32, v: f32) -> f32 {
-  let p = floor(x);
-  let f = fract(x);
-  let k = 1. + 63. * pow(1. - v, 4.);
-  var va: f32 = 0.;
-  var wt: f32 = 0.;
-  for(var j: i32 = -2; j <= 2; j = j + 1) {
-    for(var i: i32 = -2; i <= 2; i = i + 1) {
-      let g = vec2<f32>(f32(i), f32(j));
-      let o = hash23(p + g) * vec3<f32>(u, u, 1.);
-      let r = g - f + o.xy;
-      let d = dot(r, r);
-      let ww = pow(1. - smoothstep(0., 1.414, sqrt(d)), k);
-      va = va + o.z * ww;
-      wt = wt + ww;
+fn voro_2d(x: vec2<f32>, u: f32, v: f32) -> f32 {
+    let p = floor(x);
+    let f = fract(x);
+    let k = 1.0 + 63.0 * pow(1. - v, 4.0);
+    var va: f32 = 0.0;
+    var wt: f32 = 0.0;
+    for(var j: i32 = -2; j <= 2; j = j + 1) {
+      for(var i: i32 = -2; i <= 2; i = i + 1) {
+        let g = vec2<f32>(f32(i), f32(j));
+        let o = hash_23_(p + g) * vec3<f32>(u, u, 1.0);
+        let r = g - f + o.xy;
+        let d = dot(r, r);
+        let ww = pow(1. - smoothstep(0.0, 1.414, sqrt(d)), k);
+        va = va + o.z * ww;
+        wt = wt + ww;
+      }
     }
-  }
-  return va / wt;
+    return va / wt;
 }
 
 
 
-fn rand2(n: vec2<f32>) -> f32 {
-  return fract(sin(dot(n, vec2<f32>(12.9898, 4.1414))) * 43758.5453);
+fn nrand(n: vec2<f32>) -> f32 {
+    return fract(sin(dot(n, vec2<f32>(12.9898, 4.1414))) * 43758.5453);
 }
 
-fn noise2(n: vec2<f32>) -> f32 {
-  let d = vec2<f32>(0., 1.);
-  let b = floor(n);
-  let f = smoothstep(vec2<f32>(0.), vec2<f32>(1.), fract(n));
-  return mix(mix(rand2(b), rand2(b + d.yx), f.x), mix(rand2(b + d.xy), rand2(b + d.yy), f.x), f.y);
+fn noise_2d(n: vec2<f32>) -> f32 {
+    let d = vec2<f32>(0.0, 1.0);
+    let b = floor(n);
+    let f = smoothstep(vec2<f32>(0.0), vec2<f32>(1.0), fract(n));
+    return mix(mix(nrand(b), nrand(b + d.yx), f.x), mix(nrand(b + d.xy), nrand(b + d.yy), f.x), f.y);
+}
+
+
+// https://www.shadertoy.com/view/MlVSzw
+const ALPHA: f32 = 0.14;
+const INV_ALPHA: f32 = 7.14285714286;
+const K: f32 = 0.08912676813;
+
+fn inv_error_function(x: f32) -> f32 {
+    let y: f32 = log(1.0 - x*x);
+    let z: f32 = K + 0.5 * y;
+    return sqrt(sqrt(z*z - y * INV_ALPHA) - z) * sign(x);
+}
+
+fn gaussian_rand(n: vec2<f32>) -> f32 {
+    let x: f32 = nrand(n);
+
+    return inv_error_function(x * 2.0 - 1.0) * 0.15 + 0.5;
 }

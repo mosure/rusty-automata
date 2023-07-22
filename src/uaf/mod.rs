@@ -10,7 +10,7 @@ use bevy::{
 };
 
 
-const UAF_SHADER_HANDLE: HandleUntyped = HandleUntyped::weak_from_u64(Shader::TYPE_UUID, 1301136311962802512);
+const UAF_SHADER_HANDLE: HandleUntyped = HandleUntyped::weak_from_u64(Shader::TYPE_UUID, 61270573934);
 
 #[derive(Default)]
 pub struct UafPlugin;

@@ -10,7 +10,7 @@ use bevy::{
 };
 
 
-const NOISE_SHADER_HANDLE: HandleUntyped = HandleUntyped::weak_from_u64(Shader::TYPE_UUID, 13513318664863112);
+const NOISE_SHADER_HANDLE: HandleUntyped = HandleUntyped::weak_from_u64(Shader::TYPE_UUID, 8343684782112);
 
 #[derive(Default)]
 pub struct NoisePlugin;

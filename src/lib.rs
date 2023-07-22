@@ -2,16 +2,27 @@ use bevy::{
     prelude::*,
     app::AppExit,
     diagnostic::{
-        Diagnostics,
+        DiagnosticsStore,
         FrameTimeDiagnosticsPlugin,
     },
+    render::{
+        RenderPlugin,
+        settings::{
+            WgpuLimits,
+            WgpuSettings,
+        },
+    },
 };
-use bevy_framepace::{
-    FramepaceSettings,
-    Limiter,
-};
+// TODO: update to latest framepace
+// use bevy_framepace::{
+//     FramepaceSettings,
+//     Limiter,
+// };
+
+use automata::AutomataPlugin;
 
 // TODO: move to crate project structure
+pub mod automata;
 pub mod neat;
 pub mod noise;
 pub mod plot;
@@ -21,7 +32,7 @@ pub mod utils;
 
 pub struct RustyAutomataApp {
     esc_close: bool,
-    fps_limit: f64,
+    //fps_limit: f64,
     show_fps: bool,
     width: f32,
     height: f32,
@@ -32,7 +43,7 @@ impl Default for RustyAutomataApp {
     fn default() -> RustyAutomataApp {
         RustyAutomataApp {
             esc_close: true,
-            fps_limit: 0.0,
+            //fps_limit: 0.0,
             show_fps: true,
             width: 1920.0,
             height: 1080.0,
@@ -43,8 +54,18 @@ impl Default for RustyAutomataApp {
 
 impl Plugin for RustyAutomataApp {
     fn build(&self, app: &mut App) {
-        app.add_plugins(DefaultPlugins
+        app.add_plugins(
+            DefaultPlugins
             .set(ImagePlugin::default_nearest())
+            .set(RenderPlugin {
+                wgpu_settings: WgpuSettings {
+                    limits: WgpuLimits {
+                        max_texture_dimension_2d: 16384, // TODO: use 2d texture array for tiling fields
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                }
+            })
             .set(WindowPlugin {
                 primary_window: Some(Window {
                     fit_canvas_to_parent: false,
@@ -56,25 +77,29 @@ impl Plugin for RustyAutomataApp {
                     ..default()
                 }),
                 ..default()
-            }));
+            })
+        );
+        app.add_plugins(
+            AutomataPlugin::default(),
+        );
 
         if self.esc_close {
-            app.add_system(esc_close);
+            app.add_systems(Update, esc_close);
         }
 
-        if self.fps_limit > 0.0 {
-            app.add_plugin(bevy_framepace::FramepacePlugin);
+        // if self.fps_limit > 0.0 {
+        //     app.add_plugin(bevy_framepace::FramepacePlugin);
 
-            let fps_limit = self.fps_limit;
-            app.add_startup_system(move |settings: ResMut<FramepaceSettings>| {
-                fps_throttle_setup(settings, fps_limit);
-            });
-        }
+        //     let fps_limit = self.fps_limit;
+        //     app.add_startup_system(move |settings: ResMut<FramepaceSettings>| {
+        //         fps_throttle_setup(settings, fps_limit);
+        //     });
+        // }
 
         if self.show_fps {
-            app.add_plugin(FrameTimeDiagnosticsPlugin::default());
-            app.add_startup_system(fps_display_setup);
-            app.add_system(fps_update_system);
+            app.add_plugins(FrameTimeDiagnosticsPlugin::default());
+            app.add_systems(Startup, fps_display_setup);
+            app.add_systems(Update, fps_update_system);
         }
     }
 }
@@ -90,12 +115,12 @@ pub fn esc_close(
 }
 
 
-fn fps_throttle_setup(
-    mut settings: ResMut<FramepaceSettings>,
-    fps: f64,
-) {
-    settings.limiter = Limiter::from_framerate(fps);
-}
+// fn fps_throttle_setup(
+//     mut settings: ResMut<FramepaceSettings>,
+//     fps: f64,
+// ) {
+//     settings.limiter = Limiter::from_framerate(fps);
+// }
 
 
 fn fps_display_setup(
@@ -120,11 +145,8 @@ fn fps_display_setup(
             }),
         ]).with_style(Style {
             position_type: PositionType::Absolute,
-            position: UiRect {
-                bottom: Val::Px(5.0),
-                left: Val::Px(15.0),
-                ..default()
-            },
+            bottom: Val::Px(5.0),
+            left: Val::Px(15.0),
             ..default()
         }),
         FpsText,
@@ -134,7 +156,10 @@ fn fps_display_setup(
 #[derive(Component)]
 struct FpsText;
 
-fn fps_update_system(diagnostics: Res<Diagnostics>, mut query: Query<&mut Text, With<FpsText>>) {
+fn fps_update_system(
+    diagnostics: Res<DiagnosticsStore>,
+    mut query: Query<&mut Text, With<FpsText>>,
+) {
     for mut text in &mut query {
         if let Some(fps) = diagnostics.get(FrameTimeDiagnosticsPlugin::FPS) {
             if let Some(value) = fps.smoothed() {
