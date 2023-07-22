@@ -1,10 +1,10 @@
 #define_import_path rusty_automata::automata
 
-#import rusty_automata::noise                   simplex_2d
+#import rusty_automata::noise                   perlin_3d, simplex_2d
 
 
 struct AutomataUniforms {
-    edge_neighborhood: u32,
+    edge_count: u32,
     max_radius: f32,
     max_edge_weight: f32,
     seed: f32,
@@ -14,7 +14,7 @@ struct AutomataUniforms {
 
 
 @group(0) @binding(0)
-var edges: texture_storage_2d<rgba32float, read_write>;
+var edges: texture_storage_2d_array<rgba32float, read_write>;
 
 @group(0) @binding(1)
 var nodes: texture_storage_2d<rgba32float, read_write>;
@@ -38,10 +38,14 @@ struct State {
 };
 
 
-fn get_edge(location: vec2<i32>) -> Edge {
+fn get_edge(
+    location: vec2<i32>,
+    index: u32,
+) -> Edge {
     let edge_lookup = textureLoad(
         edges,
         location,
+        index,
     );
 
     return Edge(
@@ -53,10 +57,15 @@ fn get_edge(location: vec2<i32>) -> Edge {
     );
 }
 
-fn set_edge(location: vec2<i32>, edge: Edge) -> void {
+fn set_edge(
+    location: vec2<i32>,
+    index: u32,
+    edge: Edge,
+) -> void {
     textureStore(
         edges,
         location,
+        index,
         vec4<f32>(
             f32(edge.from_node_location.x),
             f32(edge.from_node_location.y),
@@ -66,7 +75,9 @@ fn set_edge(location: vec2<i32>, edge: Edge) -> void {
     );
 }
 
-fn get_state(location: vec2<i32>) -> State {
+fn get_state(
+    location: vec2<i32>,
+) -> State {
     let state_lookup = textureLoad(
         nodes,
         location,
@@ -79,7 +90,10 @@ fn get_state(location: vec2<i32>) -> State {
     );
 }
 
-fn set_state(location: vec2<i32>, state: State) -> void {
+fn set_state(
+    location: vec2<i32>,
+    state: State,
+) -> void {
     textureStore(
         nodes,
         location,
@@ -112,24 +126,20 @@ fn set_next_state(
 }
 
 
-fn pre_activation(location: vec2<i32>) -> f32 {
-    let edge_location = location * i32(automata_uniforms.edge_neighborhood);
-
+fn pre_activation(
+    location: vec2<i32>,
+) -> f32 {
     let current_state = get_state(location);
 
     var input_sum = 0.0;
-    for (var x = 0u; x < automata_uniforms.edge_neighborhood; x = x + 1u) {
-        for (var y = 0u; y < automata_uniforms.edge_neighborhood; y = y + 1u) {
-            let offset = vec2<i32>(vec2<u32>(x, y));
+    for (var i = 0u; i < automata_uniforms.edge_count; i = i + 1u) {
+        let edge = get_edge(location, i);
+        let from_node = get_state(edge.from_node_location);
 
-            let edge = get_edge(edge_location + offset);
-            let from_node = get_state(edge.from_node_location);
-
-            input_sum += edge.weight * from_node.value;
-        }
+        input_sum += edge.weight * from_node.value;
     }
 
-    return current_state.value + input_sum / pow(f32(automata_uniforms.edge_neighborhood), 2.0);
+    return current_state.value + input_sum / f32(automata_uniforms.edge_count);
 }
 
 
@@ -173,34 +183,29 @@ fn init_state(
 fn init_edges(
     location: vec2<i32>,
 ) {
-    let edge_location = location * i32(automata_uniforms.edge_neighborhood);
-    let edge_location_f32 = vec2<f32>(edge_location);
-
     //let ring_factor = min(1.0, ring(vec2<f32>(location) / vec2<f32>(f32(automata_uniforms.height), f32(automata_uniforms.height)) - vec2<f32>(f32(automata_uniforms.width) / f32(automata_uniforms.height) / 2.0, 0.5)) + 0.6);
     let ring_factor = simplex_2d(vec2<f32>(location) * vec2<f32>(0.001, 0.001)) * 0.5 + 1.0;
 
-    for (var x = 0u; x < automata_uniforms.edge_neighborhood; x = x + 1u) {
-        for (var y = 0u; y < automata_uniforms.edge_neighborhood; y = y + 1u) {
-            let offset = vec2<i32>(vec2<u32>(x, y));
+    for (var i = 0u; i < automata_uniforms.edge_count; i = i + 1u) {
+        // TODO: consider gaussian sampling with shaping function from above?
+        let xr = perlin_3d(vec3<f32>(vec2<f32>(location), f32(i * automata_uniforms.width) + automata_uniforms.seed)) * 120.0;
+        let yr = perlin_3d(vec3<f32>(vec2<f32>(location), f32(i * automata_uniforms.height) + automata_uniforms.seed)) * 120.0;
 
-            let xr = simplex_2d(edge_location_f32 + vec2<f32>(23.0 + f32(x), -23.0 + 12.0 * f32(y))) * 120.0;
-            let yr = simplex_2d(-edge_location_f32 + vec2<f32>(-12.0 + 27.0 * f32(x), 72.0 + -25.0 * f32(y))) * 120.0;
+        let edge_weight = perlin_3d(vec3<f32>(vec2<f32>(location), f32(i) + 2.0 * automata_uniforms.seed)) * automata_uniforms.max_edge_weight;
 
-            let edge_weight = simplex_2d(edge_location_f32 + vec2<f32>(13.0 + -23.0 * f32(x), 17.0 + -11.0 * f32(y))) * automata_uniforms.max_edge_weight;
+        let edge_offset = vec2<f32>(
+            f32(xr) % automata_uniforms.max_radius * ring_factor,
+            f32(yr) % automata_uniforms.max_radius * ring_factor,
+        );
 
-            let edge_offset = vec2<f32>(
-                f32(xr) % automata_uniforms.max_radius * ring_factor,
-                f32(yr) % automata_uniforms.max_radius * ring_factor,
-            );
-
-            let from_node_location = location + vec2<i32>(edge_offset);
-            set_edge(
-                edge_location + offset,
-                Edge(
-                    from_node_location,
-                    edge_weight,
-                )
-            );
-        }
+        let from_node_location = location + vec2<i32>(edge_offset);
+        set_edge(
+            location,
+            i,
+            Edge(
+                from_node_location,
+                edge_weight,
+            )
+        );
     }
 }

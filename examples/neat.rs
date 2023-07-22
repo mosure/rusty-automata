@@ -40,11 +40,11 @@ fn setup(
         depth_or_array_layers: 1,
     };
 
-    let edge_neighborhood: u32 = 5;
+    let edge_count: u32 = 25;
 
     let automata_field = AutomataField::new(
         field_size,
-        edge_neighborhood,
+        edge_count,
         &mut images
     );
 
@@ -65,7 +65,7 @@ fn setup(
     commands.spawn(Camera2dBundle::default());
 
     println!("field_size: {:?}x{:?}", field_size.width, field_size.height);
-    let parameters = field_size.width * field_size.height * 7 + edge_neighborhood * edge_neighborhood * 4;
+    let parameters = (field_size.width * field_size.height * 8 + edge_count * 4) * field_size.depth_or_array_layers;
     println!("parameters: {}", parameters.to_formatted_string(&Locale::en));
 }
 

@@ -86,7 +86,7 @@ impl Plugin for AutomataPlugin {
 pub struct AutomataField {
     pub edges: Handle<Image>,
     pub nodes: Handle<Image>,
-    edge_neighborhood: u32,
+    edge_count: u32,
     max_radius: f32,
     max_edge_weight: f32,
     seed: f32,
@@ -97,7 +97,7 @@ pub struct AutomataField {
 impl AutomataField {
     pub fn new(
         field_size: Extent3d,
-        edge_neighborhood: u32,
+        edge_count: u32,
         images: &mut ResMut<Assets<Image>>,
     ) -> Self {
         let mut nodes = Image::new_fill(
@@ -112,9 +112,9 @@ impl AutomataField {
 
         // 2D to assist cache locality
         let edges_size = Extent3d {
-            width: field_size.width * edge_neighborhood,
-            height: field_size.height * edge_neighborhood,
-            depth_or_array_layers: 1,
+            width: field_size.width,
+            height: field_size.height,
+            depth_or_array_layers: field_size.depth_or_array_layers * edge_count,
         };
 
         let mut edges: Image = Image::new_fill(
@@ -129,7 +129,7 @@ impl AutomataField {
         Self {
             edges,
             nodes,
-            edge_neighborhood,
+            edge_count,
             max_radius: 35.0,
             max_edge_weight: 12.0,
             seed: 0.0,
@@ -142,7 +142,7 @@ impl AutomataField {
 
 #[derive(Clone, Default, ShaderType)]
 struct AutomataUniform {
-    edge_neighborhood: u32,
+    edge_count: u32,
     max_radius: f32,
     max_edge_weight: f32,
     seed: f32,
@@ -163,7 +163,7 @@ fn prepare_automata_uniforms(
 ) {
     let buffer = uniform_buffer.buffer.get_mut();
 
-    buffer.edge_neighborhood = automata.edge_neighborhood;
+    buffer.edge_count = automata.edge_count;
     buffer.max_radius = automata.max_radius;
     buffer.max_edge_weight = automata.max_edge_weight;
     buffer.seed = automata.seed;
@@ -236,7 +236,7 @@ impl FromWorld for AutomataPipeline {
                             ty: BindingType::StorageTexture {
                                 access: StorageTextureAccess::ReadWrite,
                                 format: TextureFormat::Rgba32Float,
-                                view_dimension: TextureViewDimension::D2,
+                                view_dimension: TextureViewDimension::D2Array,
                             },
                             count: None,
                         },
