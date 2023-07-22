@@ -79,6 +79,7 @@ impl Plugin for AutomataPlugin {
 }
 
 
+// TODO: set max number of steps /w completion event
 #[derive(Resource, Clone, ExtractResource)]
 pub struct AutomataField {
     pub edges: Handle<Image>,
@@ -212,6 +213,7 @@ fn queue_automata_bind_group(
 }
 
 
+// TODO: internal step counter, validate step count in render world equals main world
 #[derive(Resource)]
 pub struct AutomataPipeline {
     pub bind_group_layout: BindGroupLayout,
