@@ -94,6 +94,7 @@ pub struct AutomataField {
     height: u32,
 }
 
+// TODO: use default implementation
 impl AutomataField {
     pub fn new(
         field_size: Extent3d,

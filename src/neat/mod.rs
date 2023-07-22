@@ -115,7 +115,7 @@ impl Plugin for NeatPlugin {
 
 #[derive(Resource, Clone, ExtractResource)]
 pub struct NeatField {
-    uaf_activations: Handle<Image>,
+    pub uaf_activations: Handle<Image>,
 }
 
 impl NeatField {

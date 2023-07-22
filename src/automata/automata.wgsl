@@ -1,6 +1,6 @@
 #define_import_path rusty_automata::automata
 
-#import rusty_automata::noise                   perlin_3d, simplex_2d
+#import rusty_automata::noise                   gaussian_rand, perlin_3d, simplex_2d
 
 
 struct AutomataUniforms {
@@ -120,7 +120,9 @@ fn set_next_state(
         integral,
     );
 
+    // TODO: test performance of each barrier
     storageBarrier();
+    //workgroupBarrier();
 
     set_state(location, next_state);
 }
@@ -183,15 +185,17 @@ fn init_state(
 fn init_edges(
     location: vec2<i32>,
 ) {
+    let scaled_location = vec2<f32>(location) / vec2<f32>(f32(automata_uniforms.width), f32(automata_uniforms.height)) * 13.7;
+
     //let ring_factor = min(1.0, ring(vec2<f32>(location) / vec2<f32>(f32(automata_uniforms.height), f32(automata_uniforms.height)) - vec2<f32>(f32(automata_uniforms.width) / f32(automata_uniforms.height) / 2.0, 0.5)) + 0.6);
     let ring_factor = simplex_2d(vec2<f32>(location) * vec2<f32>(0.001, 0.001)) * 0.5 + 1.0;
 
     for (var i = 0u; i < automata_uniforms.edge_count; i = i + 1u) {
         // TODO: consider gaussian sampling with shaping function from above?
-        let xr = perlin_3d(vec3<f32>(vec2<f32>(location), f32(i * automata_uniforms.width) + automata_uniforms.seed)) * 120.0;
-        let yr = perlin_3d(vec3<f32>(vec2<f32>(location), f32(i * automata_uniforms.height) + automata_uniforms.seed)) * 120.0;
+        let xr = gaussian_rand(scaled_location + f32(i * automata_uniforms.width) * 0.7 + automata_uniforms.seed) * 120.0;
+        let yr = gaussian_rand(scaled_location + f32(3u * i * automata_uniforms.width) * 0.3 + automata_uniforms.seed) * 120.0;
 
-        let edge_weight = perlin_3d(vec3<f32>(vec2<f32>(location), f32(i) + 2.0 * automata_uniforms.seed)) * automata_uniforms.max_edge_weight;
+        let edge_weight = gaussian_rand(scaled_location + f32(7u * i) * 0.1 + automata_uniforms.seed) * automata_uniforms.max_edge_weight;
 
         let edge_offset = vec2<f32>(
             f32(xr) % automata_uniforms.max_radius * ring_factor,

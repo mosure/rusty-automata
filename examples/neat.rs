@@ -47,6 +47,7 @@ fn setup(
         edge_count,
         &mut images
     );
+    let neat_field = NeatField::new(field_size, &mut images);
 
     commands.spawn(SpriteBundle {
         sprite: Sprite {
@@ -58,7 +59,7 @@ fn setup(
     });
 
     commands.insert_resource(automata_field);
-    commands.insert_resource(NeatField::new(field_size, &mut images));
+    commands.insert_resource(neat_field);
 
     // TODO: add visual remap layer via fragment shader
     // TODO: use bevy_pancam for camera controls https://github.com/johanhelsing/bevy_pancam

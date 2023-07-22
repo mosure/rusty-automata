@@ -54,13 +54,14 @@ impl Default for RustyAutomataApp {
 
 impl Plugin for RustyAutomataApp {
     fn build(&self, app: &mut App) {
+        app.insert_resource(ClearColor(Color::rgb_u8(112, 48, 48)));
         app.add_plugins(
             DefaultPlugins
             .set(ImagePlugin::default_nearest())
             .set(RenderPlugin {
                 wgpu_settings: WgpuSettings {
                     limits: WgpuLimits {
-                        max_texture_dimension_2d: 16384, // TODO: use 2d texture array for tiling fields
+                        //max_texture_dimension_2d: 16384, // TODO: use 2d texture array for tiling fields
                         ..Default::default()
                     },
                     ..Default::default()
@@ -69,7 +70,7 @@ impl Plugin for RustyAutomataApp {
             .set(WindowPlugin {
                 primary_window: Some(Window {
                     fit_canvas_to_parent: false,
-                    mode: bevy::window::WindowMode::Fullscreen,
+                    mode: bevy::window::WindowMode::Windowed,
                     present_mode: bevy::window::PresentMode::AutoVsync,
                     prevent_default_event_handling: false,
                     resolution: (self.width, self.height).into(),
