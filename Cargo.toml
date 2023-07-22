@@ -71,5 +71,9 @@ name = "neat"
 path = "examples/neat.rs"
 
 [[example]]
+name = "sandbox"
+path = "examples/sandbox.rs"
+
+[[example]]
 name = "uaf"
 path = "examples/uaf.rs"

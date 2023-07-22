@@ -41,8 +41,6 @@ use bevy::{
     },
 };
 
-use super::noise::NoisePlugin;
-
 
 const AUTOMATA_SHADER_HANDLE: HandleUntyped = HandleUntyped::weak_from_u64(Shader::TYPE_UUID, 6712956732940);
 
@@ -61,7 +59,6 @@ impl Plugin for AutomataPlugin {
 
         app.add_plugins((
             ExtractResourcePlugin::<AutomataField>::default(),
-            NoisePlugin,
         ));
 
         let render_app = app.sub_app_mut(RenderApp);

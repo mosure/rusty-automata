@@ -195,8 +195,9 @@ fn inv_error_function(x: f32) -> f32 {
     return sqrt(sqrt(z*z - y * INV_ALPHA) - z) * sign(x);
 }
 
+// expects n to be in ~[0, 1]
 fn gaussian_rand(n: vec2<f32>) -> f32 {
-    let x: f32 = nrand(n);
+    let x: f32 = nrand(n * 13.7);
 
-    return inv_error_function(x * 2.0 - 1.0) * 0.15 + 0.5;
+    return inv_error_function(x * 2.0 - 1.0) * 0.3;
 }

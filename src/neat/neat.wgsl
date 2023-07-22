@@ -1,7 +1,7 @@
 #define_import_path rusty_automata::neat
 
 #import rusty_automata::automata                automata_uniforms, init_automata, pre_activation, set_next_state
-#import rusty_automata::noise                   gaussian_rand, simplex_2d
+#import rusty_automata::noise                   gaussian_rand
 #import rusty_automata::uaf                     fUAFp, UafParameters
 
 
@@ -67,7 +67,11 @@ fn compute_next_neat_state(
     let x = pre_activation(location);
     let uaf_params = get_uaf_params(location);
 
-    let next_value = fUAFp(x, uaf_params);
+    var next_value = 0.0;//fUAFp(x, uaf_params);
+
+    if abs(x) == 0.0 {
+        next_value = 1.0;
+    }
 
     set_next_state(location, next_value);
 }
@@ -76,12 +80,12 @@ fn compute_next_neat_state(
 fn init_neat_field(
     location: vec2<i32>,
 ) {
-    let scaled_location = vec2<f32>(location) / vec2<f32>(f32(automata_uniforms.width), f32(automata_uniforms.height)) * 13.7;
+    let scaled_location = vec2<f32>(location) / vec2<f32>(f32(automata_uniforms.width), f32(automata_uniforms.height));
 
-    let uaf_a = gaussian_rand(scaled_location + vec2<f32>(-0.1, -0.2));
-    let uaf_b = gaussian_rand(scaled_location + vec2<f32>(0.11, 0.31));
-    let uaf_c = gaussian_rand(scaled_location + vec2<f32>(0.43, -0.41));
-    let uaf_d = gaussian_rand(scaled_location + vec2<f32>(-0.37, -0.17));
+    let uaf_a = gaussian_rand(scaled_location + vec2<f32>(-0.01, -0.02));
+    let uaf_b = gaussian_rand(scaled_location + vec2<f32>(0.011, 0.031));
+    let uaf_c = gaussian_rand(scaled_location + vec2<f32>(0.043, -0.041));
+    let uaf_d = gaussian_rand(scaled_location + vec2<f32>(-0.037, -0.017));
     set_uaf_params(
         location,
         UafParameters(

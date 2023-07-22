@@ -26,7 +26,6 @@ use bevy_inspector_egui::{
 
 use rusty_automata::{
     RustyAutomataApp,
-    noise::NoisePlugin,
     plot::PlotPlugin,
     uaf::UafPlugin,
     utils::setup_hooks,
@@ -37,7 +36,6 @@ fn example_app() {
     App::new()
         .add_plugins((
             RustyAutomataApp::default(),
-            NoisePlugin,
             PlotPlugin,
             UafPlugin,
             Material2dPlugin::<UafMaterial>::default(),

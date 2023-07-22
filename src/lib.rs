@@ -19,7 +19,7 @@ use bevy::{
 //     Limiter,
 // };
 
-use automata::AutomataPlugin;
+use noise::NoisePlugin;
 
 // TODO: move to crate project structure
 pub mod automata;
@@ -81,7 +81,7 @@ impl Plugin for RustyAutomataApp {
             })
         );
         app.add_plugins(
-            AutomataPlugin::default(),
+            NoisePlugin,
         );
 
         if self.esc_close {

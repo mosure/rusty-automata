@@ -7,7 +7,10 @@ use num_format::{Locale, ToFormattedString};
 
 use rusty_automata::{
     RustyAutomataApp,
-    automata::AutomataField,
+    automata::{
+        AutomataField,
+        AutomataPlugin,
+    },
     neat::{
         NeatField,
         NeatPlugin,
@@ -20,6 +23,7 @@ fn example_app() {
     App::new()
         .add_plugins((
             RustyAutomataApp::default(),
+            AutomataPlugin::default(),
             NeatPlugin,
         ))
         .add_systems(Startup, setup)
