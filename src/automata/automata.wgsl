@@ -24,15 +24,14 @@ var nodes: texture_storage_2d<rgba32float, read_write>;
 var<uniform> automata_uniforms: AutomataUniforms;
 
 
-// TODO: 4th channel for synapse decay or mobility?
 // TODO: add visualizer for edge (absolute location doesn't view well)
 // TODO: from_node_location interpolation (e.g. non-integer locations)
 struct Edge {
     from_node_location: vec2<i32>,
     weight: f32,
+    downregulation: f32,
 };
 
-// TODO: add PID (instead of bias?)
 struct State {
     value: f32,
     derivative: f32,
@@ -56,6 +55,7 @@ fn get_edge(
             i32(edge_lookup.y),
         ),
         edge_lookup.z,
+        edge_lookup.w,
     );
 }
 
@@ -72,7 +72,7 @@ fn set_edge(
             f32(edge.from_node_location.x),
             f32(edge.from_node_location.y),
             edge.weight,
-            1.0,
+            edge.downregulation,
         ),
     );
 }
@@ -115,6 +115,7 @@ fn set_next_state(
 ) {
     let derivative = current_state.value - next_value;
     let integral = current_state.integral + derivative;
+
     let next_state = State(
         next_value,
         derivative,
@@ -139,7 +140,18 @@ fn pre_activation(
         let edge = get_edge(location, i);
         let from_node = get_state(edge.from_node_location);
 
-        input_sum += edge.weight * from_node.value;
+        input_sum += edge.weight * (from_node.value - edge.downregulation);
+
+
+        set_edge(
+            location,
+            i,
+            Edge(
+                edge.from_node_location,
+                edge.weight,
+                max(abs(from_node.value - edge.downregulation), abs(edge.downregulation * 0.125)) * sign(from_node.value) * -0.9999,
+            )
+        );
     }
 
     return input_sum;
@@ -215,6 +227,7 @@ fn init_edges(
             Edge(
                 from_node_location,
                 edge_weight,
+                0.0,
             )
         );
     }
