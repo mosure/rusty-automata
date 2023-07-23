@@ -1,6 +1,6 @@
 #define_import_path rusty_automata::neat
 
-#import rusty_automata::automata                automata_uniforms, init_automata, pre_activation, set_next_state
+#import rusty_automata::automata                automata_uniforms, get_state, init_automata, pre_activation, set_next_state
 #import rusty_automata::noise                   gaussian_rand
 #import rusty_automata::uaf                     fUAFp, UafParameters
 
@@ -64,12 +64,14 @@ fn set_uaf_params(
 fn compute_next_neat_state(
     location: vec2<i32>,
 ) {
-    let x = pre_activation(location);
-    let uaf_params = get_uaf_params(location);
+    let current_state = get_state(location);
 
-    var next_value = fUAFp(x, uaf_params);
+    let next_value = fUAFp(
+        pre_activation(location, current_state),
+        get_uaf_params(location),
+    );
 
-    set_next_state(location, abs(next_value));
+    set_next_state(location, current_state, next_value);
 }
 
 
@@ -85,10 +87,10 @@ fn init_neat_field(
     set_uaf_params(
         location,
         UafParameters(
-            -1.0,
-            uaf_b,
-            uaf_c,
-            1.0,
+            -abs(uaf_a),
+            abs(uaf_b) / 1000.0,
+            -abs(uaf_c),
+            abs(uaf_d),
             0.0,
         ),
     );

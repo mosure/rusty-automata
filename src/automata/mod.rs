@@ -94,6 +94,7 @@ pub struct AutomataField {
 
 // TODO: use default implementation
 impl AutomataField {
+    // TODO: from_graph implementation
     pub fn new(
         field_size: Extent3d,
         edge_count: u32,
