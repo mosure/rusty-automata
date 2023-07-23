@@ -71,8 +71,8 @@ fn compute_next_neat_state(
             pre_activation(location, current_state),
             get_uaf_params(location),
         ),
-        -2.0,
-        2.0,
+        -1.0,
+        1.0,
     );
 
     set_next_state(location, current_state, next_value);
