@@ -130,7 +130,7 @@ impl AutomataField {
             edges,
             nodes,
             edge_count,
-            max_radius: 35.0,
+            max_radius: 5.0,
             max_edge_weight: 1.0,
             seed: 1.0,
             width: field_size.width,

@@ -39,8 +39,8 @@ fn setup(
 
     let window = windows.single();
     let field_size = Extent3d {
-        width: window.resolution.width() as u32,
-        height: window.resolution.height() as u32,
+        width: 640,//window.resolution.width() as u32,
+        height: 360,//window.resolution.height() as u32,
         depth_or_array_layers: 1,
     };
 

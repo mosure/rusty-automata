@@ -149,7 +149,7 @@ fn pre_activation(
             Edge(
                 edge.from_node_location,
                 edge.weight,
-                max(abs(from_node.value - edge.downregulation), abs(edge.downregulation * 0.125)) * sign(from_node.value) * -0.9999,
+                -(from_node.value - edge.downregulation) * 0.999,
             )
         );
     }
@@ -211,7 +211,7 @@ fn init_edges(
         let edge_weight = gaussian_rand(scaled_location + f32(i) * 0.001 + automata_uniforms.seed) * automata_uniforms.max_edge_weight;
 
         let edge_offset = vec2<f32>(
-            -abs(xr) * 1.0,
+            xr,
             yr,
         ) * automata_uniforms.max_radius;
 
