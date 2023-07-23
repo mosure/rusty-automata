@@ -66,9 +66,13 @@ fn compute_next_neat_state(
 ) {
     let current_state = get_state(location);
 
-    let next_value = fUAFp(
-        pre_activation(location, current_state),
-        get_uaf_params(location),
+    let next_value = clamp(
+        fUAFp(
+            pre_activation(location, current_state),
+            get_uaf_params(location),
+        ),
+        -2.0,
+        2.0,
     );
 
     set_next_state(location, current_state, next_value);
