@@ -24,7 +24,7 @@ fn example_app() {
         .add_plugins((
             RustyAutomataApp::default(),
             AutomataPlugin::default(),
-            NeatPlugin,
+            NeatPlugin::default(),
         ))
         .add_systems(Startup, setup)
         .run();
@@ -44,6 +44,7 @@ fn setup(
         depth_or_array_layers: 1,
     };
 
+    // TODO: change to creation args struct
     let edge_count: u32 = 25;
 
     let automata_field = AutomataField::new(

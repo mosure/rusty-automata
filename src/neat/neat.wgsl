@@ -69,7 +69,7 @@ fn compute_next_neat_state(
 
     var next_value = fUAFp(x, uaf_params);
 
-    set_next_state(location, next_value);
+    set_next_state(location, abs(next_value));
 }
 
 
@@ -85,10 +85,10 @@ fn init_neat_field(
     set_uaf_params(
         location,
         UafParameters(
-            -abs(uaf_a),
-            abs(uaf_b) / 1000.0,
-            -abs(uaf_c),
-            abs(uaf_d),
+            -1.0,
+            uaf_b,
+            uaf_c,
+            1.0,
             0.0,
         ),
     );

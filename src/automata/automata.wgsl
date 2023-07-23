@@ -133,6 +133,7 @@ fn set_next_state(
 fn pre_activation(
     location: vec2<i32>,
 ) -> f32 {
+    // TODO: optimize by only reading `get_state` once
     let current_state = get_state(location);
 
     var input_sum = 0.0;
@@ -143,7 +144,7 @@ fn pre_activation(
         input_sum += edge.weight * from_node.value;
     }
 
-    return current_state.value + input_sum / f32(automata_uniforms.edge_count);
+    return current_state.value + input_sum;
 }
 
 
@@ -157,11 +158,10 @@ fn init_automata(
 fn init_state(
     location: vec2<i32>,
 ) {
-    let initial_state = 0.0;//simplex_2d(location_f32 / 128.0);
     set_state(
         location,
         State(
-            initial_state,
+            0.0,
             0.0,
             0.0,
         ),
@@ -194,22 +194,21 @@ fn init_edges(
 
     for (var i = 0u; i < automata_uniforms.edge_count; i = i + 1u) {
         // TODO: consider gaussian sampling with shaping function from above?
-        let xr = gaussian_rand(scaled_location + f32(i * automata_uniforms.width) * 0.07 + automata_uniforms.seed) * automata_uniforms.max_radius;
-        let yr = gaussian_rand(scaled_location + f32(3u * i * automata_uniforms.width) * 0.03 + automata_uniforms.seed) * automata_uniforms.max_radius;
+        let xr = gaussian_rand(scaled_location - f32(i) * 0.007 + automata_uniforms.seed);
+        let yr = gaussian_rand(scaled_location - f32(i) * 0.003 + automata_uniforms.seed);
 
-        var edge_weight = gaussian_rand(scaled_location + f32(7u * i) * 0.01 + automata_uniforms.seed) * automata_uniforms.max_edge_weight;
+        var edge_weight = gaussian_rand(scaled_location + f32(i) * 0.01 + automata_uniforms.seed) * automata_uniforms.max_edge_weight;
 
         let edge_offset = vec2<f32>(
             xr,// * ring_factor,
             yr,// * ring_factor,
-        );
+        ) * automata_uniforms.max_radius;
 
         var from_node_location = location + vec2<i32>(edge_offset);
 
         if (from_node_location.x < 0 || from_node_location.x >= i32(automata_uniforms.width) ||
             from_node_location.y < 0 || from_node_location.y >= i32(automata_uniforms.height)) {
-            from_node_location = vec2<i32>(0, 0);
-            edge_weight = 0.0;
+            from_node_location = location - vec2<i32>(edge_offset);
         }
 
         set_edge(

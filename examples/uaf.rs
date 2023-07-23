@@ -57,7 +57,7 @@ fn setup_screen(
     let size = Extent3d {
         width: window.resolution.physical_width(),
         height: window.resolution.physical_height(),
-        ..default()
+        depth_or_array_layers: 1,
     };
 
     let quad_handle = meshes.add(Mesh::from(shape::Quad::new(Vec2::new(
