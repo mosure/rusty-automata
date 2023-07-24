@@ -143,15 +143,15 @@ fn pre_activation(
         input_sum += edge.weight * (from_node.value - edge.downregulation);
 
 
-        set_edge(
-            location,
-            i,
-            Edge(
-                edge.from_node_location,
-                edge.weight,
-                -(from_node.value - edge.downregulation) * 0.999,
-            )
-        );
+        // set_edge(
+        //     location,
+        //     i,
+        //     Edge(
+        //         edge.from_node_location,
+        //         edge.weight,
+        //         -(from_node.value - edge.downregulation) * 0.999,
+        //     )
+        // );
     }
 
     return input_sum;
