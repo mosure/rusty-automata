@@ -41,8 +41,6 @@ use bevy::{
     },
 };
 
-use super::noise::NoisePlugin;
-
 
 const AUTOMATA_SHADER_HANDLE: HandleUntyped = HandleUntyped::weak_from_u64(Shader::TYPE_UUID, 6712956732940);
 
@@ -61,7 +59,6 @@ impl Plugin for AutomataPlugin {
 
         app.add_plugins((
             ExtractResourcePlugin::<AutomataField>::default(),
-            NoisePlugin,
         ));
 
         let render_app = app.sub_app_mut(RenderApp);
@@ -82,11 +79,12 @@ impl Plugin for AutomataPlugin {
 }
 
 
+// TODO: set max number of steps /w completion event
 #[derive(Resource, Clone, ExtractResource)]
 pub struct AutomataField {
     pub edges: Handle<Image>,
     pub nodes: Handle<Image>,
-    edge_neighborhood: u32,
+    edge_count: u32,
     max_radius: f32,
     max_edge_weight: f32,
     seed: f32,
@@ -94,10 +92,12 @@ pub struct AutomataField {
     height: u32,
 }
 
+// TODO: use default implementation
 impl AutomataField {
+    // TODO: from_graph implementation
     pub fn new(
         field_size: Extent3d,
-        edge_neighborhood: u32,
+        edge_count: u32,
         images: &mut ResMut<Assets<Image>>,
     ) -> Self {
         let mut nodes = Image::new_fill(
@@ -112,9 +112,9 @@ impl AutomataField {
 
         // 2D to assist cache locality
         let edges_size = Extent3d {
-            width: field_size.width * edge_neighborhood,
-            height: field_size.height * edge_neighborhood,
-            depth_or_array_layers: 1,
+            width: field_size.width,
+            height: field_size.height,
+            depth_or_array_layers: field_size.depth_or_array_layers * edge_count,
         };
 
         let mut edges: Image = Image::new_fill(
@@ -129,10 +129,10 @@ impl AutomataField {
         Self {
             edges,
             nodes,
-            edge_neighborhood,
-            max_radius: 35.0,
-            max_edge_weight: 12.0,
-            seed: 0.0,
+            edge_count,
+            max_radius: 5.0,
+            max_edge_weight: 1.0,
+            seed: 1.0,
             width: field_size.width,
             height: field_size.height,
         }
@@ -142,7 +142,7 @@ impl AutomataField {
 
 #[derive(Clone, Default, ShaderType)]
 struct AutomataUniform {
-    edge_neighborhood: u32,
+    edge_count: u32,
     max_radius: f32,
     max_edge_weight: f32,
     seed: f32,
@@ -163,7 +163,7 @@ fn prepare_automata_uniforms(
 ) {
     let buffer = uniform_buffer.buffer.get_mut();
 
-    buffer.edge_neighborhood = automata.edge_neighborhood;
+    buffer.edge_count = automata.edge_count;
     buffer.max_radius = automata.max_radius;
     buffer.max_edge_weight = automata.max_edge_weight;
     buffer.seed = automata.seed;
@@ -214,6 +214,7 @@ fn queue_automata_bind_group(
 }
 
 
+// TODO: internal step counter, validate step count in render world equals main world
 #[derive(Resource)]
 pub struct AutomataPipeline {
     pub bind_group_layout: BindGroupLayout,
@@ -236,7 +237,7 @@ impl FromWorld for AutomataPipeline {
                             ty: BindingType::StorageTexture {
                                 access: StorageTextureAccess::ReadWrite,
                                 format: TextureFormat::Rgba32Float,
-                                view_dimension: TextureViewDimension::D2,
+                                view_dimension: TextureViewDimension::D2Array,
                             },
                             count: None,
                         },

@@ -26,7 +26,6 @@ use bevy_inspector_egui::{
 
 use rusty_automata::{
     RustyAutomataApp,
-    noise::NoisePlugin,
     plot::PlotPlugin,
     uaf::UafPlugin,
     utils::setup_hooks,
@@ -37,7 +36,6 @@ fn example_app() {
     App::new()
         .add_plugins((
             RustyAutomataApp::default(),
-            NoisePlugin,
             PlotPlugin,
             UafPlugin,
             Material2dPlugin::<UafMaterial>::default(),
@@ -59,7 +57,7 @@ fn setup_screen(
     let size = Extent3d {
         width: window.resolution.physical_width(),
         height: window.resolution.physical_height(),
-        ..default()
+        depth_or_array_layers: 1,
     };
 
     let quad_handle = meshes.add(Mesh::from(shape::Quad::new(Vec2::new(

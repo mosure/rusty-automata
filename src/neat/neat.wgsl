@@ -1,7 +1,7 @@
 #define_import_path rusty_automata::neat
 
-#import rusty_automata::automata                init_automata, pre_activation, set_next_state
-#import rusty_automata::noise                   simplex_2d
+#import rusty_automata::automata                automata_uniforms, get_state, init_automata, pre_activation, set_next_state
+#import rusty_automata::noise                   gaussian_rand
 #import rusty_automata::uaf                     fUAFp, UafParameters
 
 
@@ -40,7 +40,7 @@ fn get_uaf_params(
         activation.y,
         activation.z,
         activation.w,
-        0.0,
+        0.0, // TODO: bind UAF.e to a texture (or uniform 'noise-floor'?)
     );
 }
 
@@ -64,24 +64,30 @@ fn set_uaf_params(
 fn compute_next_neat_state(
     location: vec2<i32>,
 ) {
-    let x = pre_activation(location);
-    let uaf_params = get_uaf_params(location);
+    let current_state = get_state(location);
 
-    let next_value = fUAFp(x, uaf_params);
+    let next_value = clamp(
+        fUAFp(
+            pre_activation(location, current_state),
+            get_uaf_params(location),
+        ),
+        -1.0,
+        1.0,
+    );
 
-    set_next_state(location, next_value);
+    set_next_state(location, current_state, next_value);
 }
 
 
 fn init_neat_field(
     location: vec2<i32>,
 ) {
-    let location_f32 = vec2<f32>(location);
+    let scaled_location = vec2<f32>(location) / vec2<f32>(f32(automata_uniforms.width), f32(automata_uniforms.height));
 
-    let uaf_a = simplex_2d(location_f32 * vec2<f32>(-1.0, -2.0));
-    let uaf_b = simplex_2d(location_f32 * vec2<f32>(11.0, 31.0));
-    let uaf_c = simplex_2d(location_f32 * vec2<f32>(43.0, -41.0));
-    let uaf_d = simplex_2d(location_f32 * vec2<f32>(-37.0, -17.0));
+    let uaf_a = gaussian_rand(scaled_location + vec2<f32>(-0.01, -0.02));
+    let uaf_b = gaussian_rand(scaled_location + vec2<f32>(0.011, 0.031));
+    let uaf_c = gaussian_rand(scaled_location + vec2<f32>(0.043, -0.041));
+    let uaf_d = gaussian_rand(scaled_location + vec2<f32>(-0.037, -0.017));
     set_uaf_params(
         location,
         UafParameters(

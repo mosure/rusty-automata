@@ -1,10 +1,10 @@
 #define_import_path rusty_automata::automata
 
-#import rusty_automata::noise                   simplex_2d
+#import rusty_automata::noise                   gaussian_rand, simplex_2d
 
 
 struct AutomataUniforms {
-    edge_neighborhood: u32,
+    edge_count: u32,
     max_radius: f32,
     max_edge_weight: f32,
     seed: f32,
@@ -13,8 +13,9 @@ struct AutomataUniforms {
 };
 
 
+// TODO: separate init and update shaders so read-only textures can be bound as readonly
 @group(0) @binding(0)
-var edges: texture_storage_2d<rgba32float, read_write>;
+var edges: texture_storage_2d_array<rgba32float, read_write>;
 
 @group(0) @binding(1)
 var nodes: texture_storage_2d<rgba32float, read_write>;
@@ -23,14 +24,14 @@ var nodes: texture_storage_2d<rgba32float, read_write>;
 var<uniform> automata_uniforms: AutomataUniforms;
 
 
-// TODO: 4th channel for synapse decay or mobility?
 // TODO: add visualizer for edge (absolute location doesn't view well)
+// TODO: from_node_location interpolation (e.g. non-integer locations)
 struct Edge {
     from_node_location: vec2<i32>,
     weight: f32,
+    downregulation: f32,
 };
 
-// TODO: add PID (instead of bias?)
 struct State {
     value: f32,
     derivative: f32,
@@ -38,10 +39,14 @@ struct State {
 };
 
 
-fn get_edge(location: vec2<i32>) -> Edge {
+fn get_edge(
+    location: vec2<i32>,
+    index: u32,
+) -> Edge {
     let edge_lookup = textureLoad(
         edges,
         location,
+        index,
     );
 
     return Edge(
@@ -50,23 +55,31 @@ fn get_edge(location: vec2<i32>) -> Edge {
             i32(edge_lookup.y),
         ),
         edge_lookup.z,
+        edge_lookup.w,
     );
 }
 
-fn set_edge(location: vec2<i32>, edge: Edge) -> void {
+fn set_edge(
+    location: vec2<i32>,
+    index: u32,
+    edge: Edge,
+) -> void {
     textureStore(
         edges,
         location,
+        index,
         vec4<f32>(
             f32(edge.from_node_location.x),
             f32(edge.from_node_location.y),
             edge.weight,
-            1.0,
+            edge.downregulation,
         ),
     );
 }
 
-fn get_state(location: vec2<i32>) -> State {
+fn get_state(
+    location: vec2<i32>,
+) -> State {
     let state_lookup = textureLoad(
         nodes,
         location,
@@ -79,7 +92,10 @@ fn get_state(location: vec2<i32>) -> State {
     );
 }
 
-fn set_state(location: vec2<i32>, state: State) -> void {
+fn set_state(
+    location: vec2<i32>,
+    state: State,
+) -> void {
     textureStore(
         nodes,
         location,
@@ -94,42 +110,51 @@ fn set_state(location: vec2<i32>, state: State) -> void {
 
 fn set_next_state(
     location: vec2<i32>,
+    current_state: State,
     next_value: f32,
 ) {
-    let current_state = get_state(location);
-
     let derivative = current_state.value - next_value;
     let integral = current_state.integral + derivative;
+
     let next_state = State(
         next_value,
         derivative,
-        integral,
+        0.0,
     );
 
+    // TODO: test performance of each barrier
     storageBarrier();
+    //workgroupBarrier();
 
     set_state(location, next_state);
 }
 
 
-fn pre_activation(location: vec2<i32>) -> f32 {
-    let edge_location = location * i32(automata_uniforms.edge_neighborhood);
+fn pre_activation(
+    location: vec2<i32>,
+    current_state: State,
+) -> f32 {
+    // TODO: add self-edge weight
+    var input_sum = current_state.value * 0.125;
+    for (var i = 0u; i < automata_uniforms.edge_count; i = i + 1u) {
+        let edge = get_edge(location, i);
+        let from_node = get_state(edge.from_node_location);
 
-    let current_state = get_state(location);
+        input_sum += edge.weight * (from_node.value - edge.downregulation);
 
-    var input_sum = 0.0;
-    for (var x = 0u; x < automata_uniforms.edge_neighborhood; x = x + 1u) {
-        for (var y = 0u; y < automata_uniforms.edge_neighborhood; y = y + 1u) {
-            let offset = vec2<i32>(vec2<u32>(x, y));
 
-            let edge = get_edge(edge_location + offset);
-            let from_node = get_state(edge.from_node_location);
-
-            input_sum += edge.weight * from_node.value;
-        }
+        set_edge(
+            location,
+            i,
+            Edge(
+                edge.from_node_location,
+                edge.weight,
+                -(from_node.value - edge.downregulation) * 0.999,
+            )
+        );
     }
 
-    return current_state.value + input_sum / pow(f32(automata_uniforms.edge_neighborhood), 2.0);
+    return input_sum;
 }
 
 
@@ -143,11 +168,10 @@ fn init_automata(
 fn init_state(
     location: vec2<i32>,
 ) {
-    let initial_state = 0.0;//simplex_2d(location_f32 / 128.0);
     set_state(
         location,
         State(
-            initial_state,
+            0.0,
             0.0,
             0.0,
         ),
@@ -173,34 +197,38 @@ fn init_state(
 fn init_edges(
     location: vec2<i32>,
 ) {
-    let edge_location = location * i32(automata_uniforms.edge_neighborhood);
-    let edge_location_f32 = vec2<f32>(edge_location);
+    let scaled_location = vec2<f32>(location) / vec2<f32>(f32(automata_uniforms.width), f32(automata_uniforms.height));
 
-    //let ring_factor = min(1.0, ring(vec2<f32>(location) / vec2<f32>(f32(automata_uniforms.height), f32(automata_uniforms.height)) - vec2<f32>(f32(automata_uniforms.width) / f32(automata_uniforms.height) / 2.0, 0.5)) + 0.6);
-    let ring_factor = simplex_2d(vec2<f32>(location) * vec2<f32>(0.001, 0.001)) * 0.5 + 1.0;
+    //let ring_factor = min(1.0, ring(vec2<f32>(location) / vec2<f32>(f32(automata_uniforms.height),
+    //      f32(automata_uniforms.height)) - vec2<f32>(f32(automata_uniforms.width) / f32(automata_uniforms.height) / 2.0, 0.5)) + 0.6);
+    // let ring_factor = simplex_2d(scaled_location * 100.0) * 0.5 + 1.0;
 
-    for (var x = 0u; x < automata_uniforms.edge_neighborhood; x = x + 1u) {
-        for (var y = 0u; y < automata_uniforms.edge_neighborhood; y = y + 1u) {
-            let offset = vec2<i32>(vec2<u32>(x, y));
+    for (var i = 0u; i < automata_uniforms.edge_count; i = i + 1u) {
+        // TODO: consider gaussian sampling with shaping function from above?
+        let xr = gaussian_rand(scaled_location - f32(i) * 0.007 + automata_uniforms.seed);
+        let yr = gaussian_rand(scaled_location - f32(i) * 0.003 + automata_uniforms.seed);
 
-            let xr = simplex_2d(edge_location_f32 + vec2<f32>(23.0 + f32(x), -23.0 + 12.0 * f32(y))) * 120.0;
-            let yr = simplex_2d(-edge_location_f32 + vec2<f32>(-12.0 + 27.0 * f32(x), 72.0 + -25.0 * f32(y))) * 120.0;
+        let edge_weight = gaussian_rand(scaled_location + f32(i) * 0.001 + automata_uniforms.seed) * automata_uniforms.max_edge_weight;
 
-            let edge_weight = simplex_2d(edge_location_f32 + vec2<f32>(13.0 + -23.0 * f32(x), 17.0 + -11.0 * f32(y))) * automata_uniforms.max_edge_weight;
+        let edge_offset = vec2<f32>(
+            xr,
+            yr,
+        ) * automata_uniforms.max_radius;
 
-            let edge_offset = vec2<f32>(
-                f32(xr) % automata_uniforms.max_radius * ring_factor,
-                f32(yr) % automata_uniforms.max_radius * ring_factor,
-            );
+        let field_size =  vec2<i32>(
+            i32(automata_uniforms.width),
+            i32(automata_uniforms.height),
+        );
+        let from_node_location = (location + vec2<i32>(edge_offset) + field_size) % field_size;
 
-            let from_node_location = location + vec2<i32>(edge_offset);
-            set_edge(
-                edge_location + offset,
-                Edge(
-                    from_node_location,
-                    edge_weight,
-                )
-            );
-        }
+        set_edge(
+            location,
+            i,
+            Edge(
+                from_node_location,
+                edge_weight,
+                0.0,
+            )
+        );
     }
 }
