@@ -103,6 +103,9 @@ impl Plugin for NeatPlugin {
             bevy::render::main_graph::node::CAMERA_DRIVER,
         );
 
+        // TODO: automata node should feed into neat node :D
+        //       output of automata node is pre_activation, can swap pipelines for different behaviors
+
         // TODO: register UI editable types
     }
 
