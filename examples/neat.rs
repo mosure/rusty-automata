@@ -19,6 +19,8 @@ use bevy::{
 };
 use bevy_egui::{
     EguiContext,
+    EguiContexts,
+    EguiPlugin,
     EguiSet,
 };
 use bevy_inspector_egui::{
@@ -36,6 +38,7 @@ use bevy_inspector_egui::{
 use bevy_pancam::{
     PanCam,
     PanCamPlugin,
+    PanCamSystemSet,
 };
 use egui_dock::{
     DockArea,
@@ -68,11 +71,11 @@ fn example_app() {
             NeatPlugin::default(),
         ))
         .add_plugins((
-            PanCamPlugin::default(),
+            DefaultInspectorConfigPlugin,
+            EguiPlugin,
         ))
         .add_plugins((
-            DefaultInspectorConfigPlugin,
-            bevy_egui::EguiPlugin,
+            PanCamPlugin::default(),
         ))
         .insert_resource(UiState::new())
         .add_systems(
@@ -81,12 +84,18 @@ fn example_app() {
                 .before(EguiSet::ProcessOutput)
                 .before(bevy::transform::TransformSystem::TransformPropagate),
         )
+        .init_resource::<EguiWantsFocus>()
         .add_systems(PostUpdate, set_camera_viewport.after(show_ui_system))
+        .configure_set(
+            Update,
+            PanCamSystemSet.run_if(resource_equals(EguiWantsFocus(false))),
+        )
         .add_systems(Startup, setup)
         .register_type::<Option<Handle<Image>>>()
         .register_type::<AlphaMode>()
         .run();
 }
+
 
 fn setup(
     mut commands: Commands,
@@ -124,11 +133,11 @@ fn setup(
     commands.insert_resource(automata_field);
     commands.insert_resource(neat_field);
 
-    // TODO: add visual remap layer via fragment shader
+    // TODO(test): add visual remap layer via fragment shader
     commands.spawn((
         Camera2dBundle::default(),
         MainCamera,
-        PanCam::default(), // TODO: resolve click and drag over non-clip-rect views https://github.com/johanhelsing/bevy_pancam/issues/37
+        PanCam::default(),
     ));
 
     println!("field_size: {:?}x{:?}", field_size.width, field_size.height);
@@ -156,11 +165,16 @@ fn show_ui_system(world: &mut World) {
 }
 
 // make camera only render to view not obstructed by UI
+#[derive(Resource, Deref, DerefMut, PartialEq, Eq, Default)]
+struct EguiWantsFocus(bool);
+
 fn set_camera_viewport(
     ui_state: Res<UiState>,
     primary_window: Query<&mut Window, With<PrimaryWindow>>,
     egui_settings: Res<bevy_egui::EguiSettings>,
     mut cameras: Query<&mut Camera, With<MainCamera>>,
+    mut contexts: EguiContexts,
+    mut wants_focus: ResMut<EguiWantsFocus>,
 ) {
     let mut cam = cameras.single_mut();
 
@@ -178,6 +192,17 @@ fn set_camera_viewport(
         physical_size: UVec2::new(viewport_size.x as u32, viewport_size.y as u32),
         depth: 0.0..1.0,
     });
+
+    let pointer_pos = contexts.ctx_mut().pointer_latest_pos();
+    if let Some(pointer_pos) = pointer_pos {
+        let pointer_over_render_view = viewport_pos.x <= pointer_pos.x
+            && pointer_pos.x <= viewport_pos.x + viewport_size.x
+            && viewport_pos.y <= pointer_pos.y
+            && pointer_pos.y <= viewport_pos.y + viewport_size.y;
+
+        let new_wants_focus = (contexts.ctx_mut().wants_keyboard_input() || contexts.ctx_mut().wants_pointer_input()) && !pointer_over_render_view;
+        wants_focus.set_if_neq(EguiWantsFocus(new_wants_focus));
+    }
 }
 
 
