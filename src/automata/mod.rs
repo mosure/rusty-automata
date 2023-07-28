@@ -131,7 +131,7 @@ impl AutomataField {
             nodes,
             edge_count,
             max_radius: 15.0,
-            max_edge_weight: 1.0,
+            max_edge_weight: 16.0,
             seed: 1.0,
             width: field_size.width,
             height: field_size.height,

@@ -112,7 +112,7 @@ fn setup(
     };
 
     // TODO: change to creation args struct
-    let edge_count: u32 = 32;
+    let edge_count: u32 = 25;
 
     let automata_field = AutomataField::new(
         field_size,
