@@ -232,6 +232,10 @@ enum NeatState {
     Update,
 }
 
+// TODO: make AutomataNode a pipeline-generic trait and access an Init/Update/Render pipeline (all nodes should be renderable/inspectable)
+// automata_node -> neat_node
+//  ^- render_node   ^- render_node
+//  ^- init_node     ^- init_node
 struct NeatNode {
     state: NeatState,
 }

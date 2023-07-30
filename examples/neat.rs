@@ -147,6 +147,7 @@ fn setup(
 
 
 // TODO: move UI system to core as a plugin, expose AutomataReflect to filter UI (expect proper type registration still), draw fps over UI, or move it into clip-rect space?
+// TODO: toggle UI with F1 key
 #[derive(Component)]
 struct MainCamera;
 
