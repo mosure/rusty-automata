@@ -237,6 +237,7 @@ enum NeatState {
 // automata_node -> neat_node
 //  ^- render_node   ^- render_node
 //  ^- init_node     ^- init_node
+// TODO: switch render pipelines via UI switches (also init pipelines for random initialization mode/'interesting universes')
 struct NeatNode {
     state: NeatState,
 }
