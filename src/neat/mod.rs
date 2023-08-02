@@ -62,6 +62,7 @@ const NEAT_SHADER_HANDLE: HandleUntyped = HandleUntyped::weak_from_u64(Shader::T
 const WORKGROUP_SIZE: u32 = 4;
 
 
+// TODO: IO visualization (e.g. EEG of neuron outputs)
 // TODO: streaming IO
 // #[derive(Resource, Clone, ExtractResource)]
 // struct NeatIO {
