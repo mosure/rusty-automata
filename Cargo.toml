@@ -71,6 +71,10 @@ lto = "fat"
 codegen-units = 1
 
 [[example]]
+name = "neat_pack"
+path = "examples/neat_pack.rs"
+
+[[example]]
 name = "neat"
 path = "examples/neat.rs"
 
