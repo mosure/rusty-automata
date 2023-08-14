@@ -62,6 +62,7 @@ const NEAT_SHADER_HANDLE: HandleUntyped = HandleUntyped::weak_from_u64(Shader::T
 const WORKGROUP_SIZE: u32 = 4;
 
 
+// TODO: IO visualization (e.g. EEG of neuron outputs)
 // TODO: streaming IO
 // #[derive(Resource, Clone, ExtractResource)]
 // struct NeatIO {
@@ -102,6 +103,9 @@ impl Plugin for NeatPlugin {
             "neat",
             bevy::render::main_graph::node::CAMERA_DRIVER,
         );
+
+        // TODO: automata node should feed into neat node :D
+        //       output of automata node is pre_activation, can swap pipelines for different behaviors
 
         // TODO: register UI editable types
     }
@@ -229,6 +233,11 @@ enum NeatState {
     Update,
 }
 
+// TODO: make AutomataNode a pipeline-generic trait and access an Init/Update/Render pipeline (all nodes should be renderable/inspectable)
+// automata_node -> neat_node
+//  ^- render_node   ^- render_node
+//  ^- init_node     ^- init_node
+// TODO: switch render pipelines via UI switches (also init pipelines for random initialization mode/'interesting universes')
 struct NeatNode {
     state: NeatState,
 }

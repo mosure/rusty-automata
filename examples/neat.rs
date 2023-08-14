@@ -1,8 +1,13 @@
 use bevy::{
     prelude::*,
-    render::render_resource::Extent3d,
+    reflect::TypeUuid,
+    render::render_resource::{
+        AsBindGroup,
+        Extent3d,
+        ShaderRef,
+    },
+    sprite::Material2d,
 };
-
 use num_format::{Locale, ToFormattedString};
 
 use rusty_automata::{
@@ -18,7 +23,6 @@ use rusty_automata::{
     utils::setup_hooks,
 };
 
-
 fn example_app() {
     App::new()
         .add_plugins((
@@ -30,6 +34,7 @@ fn example_app() {
         .run();
 }
 
+
 fn setup(
     mut commands: Commands,
     windows: Query<&Window>,
@@ -39,13 +44,13 @@ fn setup(
 
     let window = windows.single();
     let field_size = Extent3d {
-        width: 640,//window.resolution.width() as u32,
-        height: 360,//window.resolution.height() as u32,
+        width: window.resolution.width() as u32,
+        height: window.resolution.height() as u32,
         depth_or_array_layers: 1,
     };
 
     // TODO: change to creation args struct
-    let edge_count: u32 = 32;
+    let edge_count: u32 = 25;
 
     let automata_field = AutomataField::new(
         field_size,
@@ -66,15 +71,22 @@ fn setup(
     commands.insert_resource(automata_field);
     commands.insert_resource(neat_field);
 
-    // TODO: add visual remap layer via fragment shader
-    // TODO: use bevy_pancam for camera controls https://github.com/johanhelsing/bevy_pancam
-    commands.spawn(Camera2dBundle::default());
-
     println!("field_size: {:?}x{:?}", field_size.width, field_size.height);
     let parameters = (field_size.width * field_size.height * 8 + edge_count * 4) * field_size.depth_or_array_layers;
     println!("parameters: {}", parameters.to_formatted_string(&Locale::en));
 }
 
+
+// TODO(test): add visual remap layer via fragment shader
+#[derive(AsBindGroup, Clone, Debug, Default, Reflect, TypeUuid)]
+#[uuid = "ac2f08eb-5234-1262-5556-51571ea332d5"]
+struct NeatVisualMaterial { }
+
+impl Material2d for NeatVisualMaterial {
+    fn fragment_shader() -> ShaderRef {
+        "shaders/neat.wgsl".into()
+    }
+}
 
 pub fn main() {
     setup_hooks();

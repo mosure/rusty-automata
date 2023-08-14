@@ -19,10 +19,9 @@ use bevy::{
 //     Limiter,
 // };
 
-use noise::NoisePlugin;
-
 // TODO: move to crate project structure
 pub mod automata;
+pub mod editor;
 pub mod neat;
 pub mod noise;
 pub mod plot;
@@ -31,6 +30,7 @@ pub mod utils;
 
 
 pub struct RustyAutomataApp {
+    editor: bool,
     esc_close: bool,
     //fps_limit: f64,
     show_fps: bool,
@@ -42,6 +42,7 @@ pub struct RustyAutomataApp {
 impl Default for RustyAutomataApp {
     fn default() -> RustyAutomataApp {
         RustyAutomataApp {
+            editor: true,
             esc_close: true,
             //fps_limit: 0.0,
             show_fps: true,
@@ -80,9 +81,11 @@ impl Plugin for RustyAutomataApp {
                 ..default()
             })
         );
-        app.add_plugins(
-            NoisePlugin,
-        );
+        app.add_plugins(noise::NoisePlugin);
+
+        if self.editor {
+            app.add_plugins(editor::EditorPlugin);
+        }
 
         if self.esc_close {
             app.add_systems(Update, esc_close);

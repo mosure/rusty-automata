@@ -4,9 +4,7 @@ use bevy::{
         HandleUntyped,
     },
     prelude::*,
-    reflect::{
-        TypeUuid,
-    }
+    reflect::TypeUuid
 };
 
 

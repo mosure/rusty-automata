@@ -66,16 +66,12 @@ fn compute_next_neat_state(
 ) {
     let current_state = get_state(location);
 
-    let next_value = clamp(
-        fUAFp(
-            pre_activation(location, current_state),
-            get_uaf_params(location),
-        ),
-        -1.0,
-        1.0,
+    let next_value = fUAFp(
+        pre_activation(location, current_state),
+        get_uaf_params(location),
     );
 
-    set_next_state(location, current_state, next_value);
+    set_next_state(location, current_state, clamp(next_value, -1.0, 1.0));
 }
 
 
@@ -84,19 +80,26 @@ fn init_neat_field(
 ) {
     let scaled_location = vec2<f32>(location) / vec2<f32>(f32(automata_uniforms.width), f32(automata_uniforms.height));
 
-    let uaf_a = gaussian_rand(scaled_location + vec2<f32>(-0.01, -0.02));
-    let uaf_b = gaussian_rand(scaled_location + vec2<f32>(0.011, 0.031));
-    let uaf_c = gaussian_rand(scaled_location + vec2<f32>(0.043, -0.041));
-    let uaf_d = gaussian_rand(scaled_location + vec2<f32>(-0.037, -0.017));
+    let uaf_a = gaussian_rand(scaled_location + vec2<f32>(-0.01, -0.02)) * 1.25;
+    let uaf_b = gaussian_rand(scaled_location + vec2<f32>(0.011, 0.031)) * 1.25;
+    let uaf_c = gaussian_rand(scaled_location + vec2<f32>(0.043, -0.041)) * 1.25;
+    let uaf_d = gaussian_rand(scaled_location + vec2<f32>(-0.037, -0.017)) * 1.25;
     set_uaf_params(
         location,
         UafParameters(
-            -abs(uaf_a),
-            abs(uaf_b) / 1000.0,
-            -abs(uaf_c),
-            abs(uaf_d),
+            -1.0,
+            -1.0,
+            -1.0,
+            1.0,
             0.0,
         ),
+        // UafParameters(
+        //     -abs(uaf_a),
+        //     abs(uaf_b) / 1000.0,
+        //     -abs(uaf_c),
+        //     abs(uaf_d),
+        //     0.0,
+        // ),
     );
 
     init_automata(location);
