@@ -28,8 +28,6 @@ fn setup(
     windows: Query<&Window>,
     mut images: ResMut<Assets<Image>>,
 ) {
-    let max_edge_count: u32 = 25;
-
     let graphs: Vec<NeatGraph> = vec![
         NeatGraph {
             nodes: vec![
@@ -43,9 +41,8 @@ fn setup(
                     },
                     source_edges: vec![
                         NeatEdge {
-                            weight: 0.0,
-                            source: 0,
-                            input: 0,
+                            weight: 1.0,
+                            source: 1,
                         },
                     ],
                 },
@@ -59,9 +56,8 @@ fn setup(
                     },
                     source_edges: vec![
                         NeatEdge {
-                            weight: 0.0,
-                            source: 0,
-                            input: 0,
+                            weight: 1.0,
+                            source: 2,
                         },
                     ],
                 },
@@ -75,9 +71,8 @@ fn setup(
                     },
                     source_edges: vec![
                         NeatEdge {
-                            weight: 0.0,
-                            source: 0,
-                            input: 0,
+                            weight: 1.0,
+                            source: 3,
                         },
                     ],
                 },
@@ -95,9 +90,8 @@ fn setup(
                     },
                     source_edges: vec![
                         NeatEdge {
-                            weight: 0.0,
+                            weight: 1.0,
                             source: 0,
-                            input: 0,
                         },
                     ],
                 },
@@ -107,7 +101,6 @@ fn setup(
 
     let population = NeatPopulation {
         graphs,
-        max_edge_count,
     };
     let textures = population_to_textures(&population);
 
@@ -121,7 +114,7 @@ fn setup(
             custom_size: Some(Vec2::new(window.resolution.width() as f32, window.resolution.height() as f32)),
             ..default()
         },
-        texture: activations,
+        texture: edges,
         ..default()
     });
 }

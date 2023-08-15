@@ -30,7 +30,21 @@ jobs:
           ~/.cargo/git/db/
           target/
         key: ${{ runner.os }}-cargo-build-stable-${{ hashFiles('**/Cargo.toml') }}
-    - name: Build
-      run: cargo build
-    - name: Run tests
+
+    - name: check
+      run: cargo check
+
+    - name: build
+      run: cargo build --timings
+
+    - name: lint
+      run: cargo clippy
+
+    - name: test
       run: cargo test
+
+    - name: bench
+      run: cargo bench
+
+    - name: doc
+      run: cargo doc

@@ -20,7 +20,6 @@ pub struct NeatUafActivation {
 pub struct NeatEdge {
     pub weight: f32,
     pub source: usize,
-    pub input: usize,
 }
 
 pub struct NeatNode {
@@ -34,7 +33,6 @@ pub struct NeatGraph {
 
 pub struct NeatPopulation {
     pub graphs: Vec<NeatGraph>,
-    pub max_edge_count: u32,
 }
 
 pub struct NeatTextures {
@@ -43,7 +41,7 @@ pub struct NeatTextures {
     pub nodes: Image,
 }
 
-fn to_byte_slice<'a>(floats: &'a [f32]) -> &'a [u8] {
+fn to_byte_slice(floats: &[f32]) -> &[u8] {
     unsafe {
         std::slice::from_raw_parts(floats.as_ptr() as *const _, floats.len() * 4)
     }
@@ -51,7 +49,7 @@ fn to_byte_slice<'a>(floats: &'a [f32]) -> &'a [u8] {
 
 fn pack_2d(elements: u32) -> (u32, u32) {
     let square_size = (elements as f32).sqrt().ceil() as u32;
-    let excess_area = (square_size.pow(2) - elements) as u32;
+    let excess_area = square_size.pow(2) - elements;
     let rows_to_remove = excess_area / square_size;
     let width = square_size;
     let height = square_size - rows_to_remove;
@@ -74,8 +72,9 @@ pub fn population_to_textures(population: &NeatPopulation) -> NeatTextures {
     let mut activation_texture_data: Vec<f32> = Vec::new();
     activation_texture_data.resize((field_size.width * field_size.height) as usize * 4, 0.0);
 
+    let max_edge_count = population.graphs.iter().map(|g| g.nodes.iter().map(|n| n.source_edges.len()).max().unwrap()).max().unwrap() as u32;
     let mut edge_texture_data: Vec<f32> = Vec::new();
-    edge_texture_data.resize((field_size.width * field_size.height * population.max_edge_count) as usize * 4, 0.0);
+    edge_texture_data.resize((field_size.width * field_size.height * max_edge_count) as usize * 4, 0.0);
 
     let mut node_texture_data: Vec<f32> = Vec::new();
     node_texture_data.resize((field_size.width * field_size.height) as usize * 4, 0.0);
@@ -90,9 +89,9 @@ pub fn population_to_textures(population: &NeatPopulation) -> NeatTextures {
 
             let node_index = (node_y * field_size.width + node_x) as usize * 4;
 
-            // node_texture_data[node_index + 0] = initial_state;
+            // node_texture_data[node_index] = initial_state;
 
-            activation_texture_data[node_index + 0] = node.activation.a;
+            activation_texture_data[node_index    ] = node.activation.a;
             activation_texture_data[node_index + 1] = node.activation.b;
             activation_texture_data[node_index + 2] = node.activation.c;
             activation_texture_data[node_index + 3] = node.activation.d;
@@ -104,15 +103,15 @@ pub fn population_to_textures(population: &NeatPopulation) -> NeatTextures {
                 let edge = NeatEdge {
                     weight: edge.weight,
                     source: edge.source,
-                    input: edge.input,
                 };
 
                 let parent_x = x + (edge.source as u32 % agent_field_width);
                 let parent_y = y + (edge.source as u32 / agent_field_width);
 
-                edge_texture_data[edge_index + 0] = parent_x as f32;
+                edge_texture_data[edge_index    ] = parent_x as f32;
                 edge_texture_data[edge_index + 1] = parent_y as f32;
                 edge_texture_data[edge_index + 2] = edge.weight;
+                edge_texture_data[edge_index + 3] = edge.weight;
             }
         }
     }
@@ -128,7 +127,7 @@ pub fn population_to_textures(population: &NeatPopulation) -> NeatTextures {
     let edges_size = Extent3d {
         width: field_size.width,
         height: field_size.height,
-        depth_or_array_layers: field_size.depth_or_array_layers * population.max_edge_count,
+        depth_or_array_layers: field_size.depth_or_array_layers * max_edge_count,
     };
     let mut edges = Image::new(
         edges_size,
