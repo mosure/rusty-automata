@@ -33,6 +33,66 @@ fn setup(
             nodes: vec![
                 NeatNode {
                     activation: NeatUafActivation {
+                        a: 0.5,
+                        b: 0.5,
+                        c: 0.5,
+                        d: 1.0,
+                        e: 0.0,
+                    },
+                    source_edges: vec![
+                        NeatEdge {
+                            weight: 1.0,
+                            source: 1,
+                        },
+                    ],
+                },
+                NeatNode {
+                    activation: NeatUafActivation {
+                        a: 0.5,
+                        b: 0.5,
+                        c: 0.5,
+                        d: 1.0,
+                        e: 0.0,
+                    },
+                    source_edges: vec![
+                        NeatEdge {
+                            weight: 1.0,
+                            source: 1,
+                        },
+                    ],
+                },
+                NeatNode {
+                    activation: NeatUafActivation {
+                        a: 0.5,
+                        b: 0.5,
+                        c: 0.5,
+                        d: 1.0,
+                        e: 0.0,
+                    },
+                    source_edges: vec![
+                        NeatEdge {
+                            weight: 1.0,
+                            source: 1,
+                        },
+                    ],
+                },
+                NeatNode {
+                    activation: NeatUafActivation {
+                        a: 0.5,
+                        b: 0.0,
+                        c: 0.5,
+                        d: 1.0,
+                        e: 0.0,
+                    },
+                    source_edges: vec![
+                        NeatEdge {
+                            weight: 1.0,
+                            source: 1,
+                        },
+                    ],
+                },
+                NeatNode {
+                    activation: NeatUafActivation {
                         a: 1.0,
                         b: 0.0,
                         c: 0.0,
@@ -86,6 +146,21 @@ fn setup(
                         b: 0.0,
                         c: 1.0,
                         d: 1.0,
+                        e: 0.0,
+                    },
+                    source_edges: vec![
+                        NeatEdge {
+                            weight: 1.0,
+                            source: 0,
+                        },
+                    ],
+                },
+                NeatNode {
+                    activation: NeatUafActivation {
+                        a: 1.0,
+                        b: 1.0,
+                        c: 1.0,
+                        d: 0.5,
                         e: 0.0,
                     },
                     source_edges: vec![

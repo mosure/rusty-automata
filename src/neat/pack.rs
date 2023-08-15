@@ -33,6 +33,7 @@ pub struct NeatGraph {
 
 pub struct NeatPopulation {
     pub graphs: Vec<NeatGraph>,
+    pub max_steps: usize,
 }
 
 pub struct NeatTextures {
@@ -63,6 +64,9 @@ pub fn population_to_textures(population: &NeatPopulation) -> NeatTextures {
     let max_node_count = population.graphs.iter().map(|g| g.nodes.len()).max().unwrap();
     let (agent_field_width, agent_field_height) = pack_2d(max_node_count as u32);
 
+    println!("node count: {}", max_node_count);
+    println!("agent field size: {}x{}", agent_field_width, agent_field_height);
+
     let field_size = Extent3d {
         width: population_width * agent_field_width,
         height: population_height * agent_field_height,
@@ -80,7 +84,7 @@ pub fn population_to_textures(population: &NeatPopulation) -> NeatTextures {
     node_texture_data.resize((field_size.width * field_size.height) as usize * 4, 0.0);
 
     for (i, graph) in population.graphs.iter().enumerate() {
-        let x = (i as u32 % population_width) * population_width;
+        let x = (i as u32 % population_width) * agent_field_width;
         let y = (i as u32 / population_width) * agent_field_height;
 
         for (j, node) in graph.nodes.iter().enumerate() {
