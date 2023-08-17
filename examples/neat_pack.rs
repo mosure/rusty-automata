@@ -34,51 +34,6 @@ fn setup(
                 NeatNode {
                     activation: NeatUafActivation {
                         a: 0.5,
-                        b: 0.5,
-                        c: 0.5,
-                        d: 1.0,
-                        e: 0.0,
-                    },
-                    source_edges: vec![
-                        NeatEdge {
-                            weight: 1.0,
-                            source: 1,
-                        },
-                    ],
-                },
-                NeatNode {
-                    activation: NeatUafActivation {
-                        a: 0.5,
-                        b: 0.5,
-                        c: 0.5,
-                        d: 1.0,
-                        e: 0.0,
-                    },
-                    source_edges: vec![
-                        NeatEdge {
-                            weight: 1.0,
-                            source: 1,
-                        },
-                    ],
-                },
-                NeatNode {
-                    activation: NeatUafActivation {
-                        a: 0.5,
-                        b: 0.5,
-                        c: 0.5,
-                        d: 1.0,
-                        e: 0.0,
-                    },
-                    source_edges: vec![
-                        NeatEdge {
-                            weight: 1.0,
-                            source: 1,
-                        },
-                    ],
-                },
-                NeatNode {
-                    activation: NeatUafActivation {
-                        a: 0.5,
                         b: 0.0,
                         c: 0.5,
                         d: 1.0,
@@ -189,7 +144,7 @@ fn setup(
             custom_size: Some(Vec2::new(window.resolution.width() as f32, window.resolution.height() as f32)),
             ..default()
         },
-        texture: edges,
+        texture: activations,
         ..default()
     });
 }

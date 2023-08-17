@@ -33,7 +33,7 @@ pub struct NeatGraph {
 
 pub struct NeatPopulation {
     pub graphs: Vec<NeatGraph>,
-    pub max_steps: usize,
+    //pub max_steps: usize,
 }
 
 pub struct NeatTextures {
