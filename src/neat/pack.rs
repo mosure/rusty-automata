@@ -7,34 +7,135 @@ use bevy::{
         TextureUsages,
     },
 };
+use pyo3::prelude::*;
 
 
+#[pyclass]
+#[derive(Clone)]
 pub struct NeatUafActivation {
+    #[pyo3(get)]
     pub a: f32,
+    #[pyo3(get)]
     pub b: f32,
+    #[pyo3(get)]
     pub c: f32,
+    #[pyo3(get)]
     pub d: f32,
+    #[pyo3(get)]
     pub e: f32,
 }
+#[pymethods]
+impl NeatUafActivation {
+    #[new]
+    fn new(
+        a: f32,
+        b: f32,
+        c: f32,
+        d: f32,
+        e: f32,
+    ) -> Self {
+        Self {
+            a,
+            b,
+            c,
+            d,
+            e,
+        }
+    }
+}
 
+#[pyclass]
+#[derive(Clone)]
 pub struct NeatEdge {
+    #[pyo3(get)]
     pub weight: f32,
+    #[pyo3(get)]
     pub source: usize,
 }
+#[pymethods]
+impl NeatEdge {
+    #[new]
+    fn new(
+        weight: f32,
+        source: usize,
+    ) -> Self {
+        Self {
+            weight,
+            source,
+        }
+    }
+}
 
+#[pyclass]
+#[derive(Clone)]
 pub struct NeatNode {
+    #[pyo3(get)]
     pub activation: NeatUafActivation,
+    #[pyo3(get)]
     pub source_edges: Vec<NeatEdge>,
 }
-
-pub struct NeatGraph {
-    pub nodes: Vec<NeatNode>,
+#[pymethods]
+impl NeatNode {
+    #[new]
+    fn new(
+        activation: NeatUafActivation,
+        source_edges: Vec<NeatEdge>,
+    ) -> Self {
+        Self {
+            activation,
+            source_edges,
+        }
+    }
 }
 
+#[pyclass]
+#[derive(Clone)]
+pub struct NeatGraph {
+    #[pyo3(get)]
+    pub nodes: Vec<NeatNode>,
+}
+#[pymethods]
+impl NeatGraph {
+    #[new]
+    fn new(
+        nodes: Vec<NeatNode>,
+    ) -> Self {
+        Self {
+            nodes,
+        }
+    }
+}
+
+#[pyclass]
 pub struct NeatPopulation {
     pub graphs: Vec<NeatGraph>,
     //pub max_steps: usize,
 }
+#[pymethods]
+impl NeatPopulation {
+    #[new]
+    fn new(
+        graphs: Vec<NeatGraph>,
+        //max_steps: usize,
+    ) -> Self {
+        Self {
+            graphs,
+            //max_steps,
+        }
+    }
+}
+
+
+#[pymodule]
+fn _rusty_automata(_py: Python, m: &PyModule) -> PyResult<()> {
+    m.add_class::<NeatUafActivation>()?;
+    m.add_class::<NeatEdge>()?;
+    m.add_class::<NeatNode>()?;
+    m.add_class::<NeatGraph>()?;
+    m.add_class::<NeatPopulation>()?;
+    Ok(())
+}
+
 
 pub struct NeatTextures {
     pub activations: Image,
