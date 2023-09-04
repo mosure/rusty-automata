@@ -107,6 +107,7 @@ impl NeatGraph {
 }
 
 #[pyclass]
+#[derive(Clone)]
 pub struct NeatPopulation {
     pub graphs: Vec<NeatGraph>,
     //pub max_steps: usize,
@@ -125,23 +126,32 @@ impl NeatPopulation {
     }
 }
 
-
-#[pymodule]
-fn _rusty_automata(_py: Python, m: &PyModule) -> PyResult<()> {
-    m.add_class::<NeatUafActivation>()?;
-    m.add_class::<NeatEdge>()?;
-    m.add_class::<NeatNode>()?;
-    m.add_class::<NeatGraph>()?;
-    m.add_class::<NeatPopulation>()?;
-    Ok(())
-}
-
-
+#[pyclass]
+#[derive(Clone)]
 pub struct NeatTextures {
     pub activations: Image,
     pub edges: Image,
+    pub input: Image,
     pub nodes: Image,
+    pub output: Image,
 }
+
+#[pymethods]
+impl NeatTextures {
+    fn node_data(&mut self) -> &[u8] {
+        self.nodes.data.as_slice()
+    }
+
+    fn set_input(&mut self, input: Vec<u8>) {
+        self.input.data = input;
+        // TODO: invalidate texture handle
+    }
+
+    fn output_data(&mut self) -> &[u8] {
+        self.edges.data.as_slice()
+    }
+}
+
 
 fn to_byte_slice(floats: &[f32]) -> &[u8] {
     unsafe {
@@ -158,15 +168,13 @@ fn pack_2d(elements: u32) -> (u32, u32) {
     (width, height)
 }
 
+#[pyfunction]
 pub fn population_to_textures(population: &NeatPopulation) -> NeatTextures {
     let population_size = population.graphs.len();
     let (population_width, population_height) = pack_2d(population_size as u32);
 
     let max_node_count = population.graphs.iter().map(|g| g.nodes.len()).max().unwrap();
     let (agent_field_width, agent_field_height) = pack_2d(max_node_count as u32);
-
-    println!("node count: {}", max_node_count);
-    println!("agent field size: {}x{}", agent_field_width, agent_field_height);
 
     let field_size = Extent3d {
         width: population_width * agent_field_width,
@@ -255,4 +263,16 @@ pub fn population_to_textures(population: &NeatPopulation) -> NeatTextures {
         edges,
         nodes
     }
+}
+
+
+#[pymodule]
+fn _rusty_automata(_py: Python, m: &PyModule) -> PyResult<()> {
+    m.add_class::<NeatUafActivation>()?;
+    m.add_class::<NeatEdge>()?;
+    m.add_class::<NeatNode>()?;
+    m.add_class::<NeatGraph>()?;
+    m.add_class::<NeatPopulation>()?;
+    m.add_function(wrap_pyfunction!(population_to_textures, m)?).unwrap();
+    Ok(())
 }
