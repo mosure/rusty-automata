@@ -1,6 +1,6 @@
 # rusty-automata
 
-![rustacean](docs/images/rustacean.png)
+![rustacean](docs/images/notferris.png)
 
 
 ## examples
