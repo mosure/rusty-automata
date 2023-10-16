@@ -51,7 +51,7 @@ impl Plugin for EditorPlugin {
         app.add_plugins((
             DefaultInspectorConfigPlugin,
             EguiPlugin,
-            PanCamPlugin::default(),
+            PanCamPlugin,
         ));
 
         app.init_resource::<EguiWantsFocus>();

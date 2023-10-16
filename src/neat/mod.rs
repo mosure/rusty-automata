@@ -57,6 +57,8 @@ use super::{
 
 use std::borrow::Cow;
 
+pub mod pack;
+
 
 const NEAT_SHADER_HANDLE: HandleUntyped = HandleUntyped::weak_from_u64(Shader::TYPE_UUID, 21533341678341);
 const WORKGROUP_SIZE: u32 = 4;

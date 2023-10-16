@@ -2,3 +2,6 @@
 
 [target.wasm32-unknown-unknown]
 runner = "wasm-server-runner"
+
+[future-incompat-report]
+frequency = "always"

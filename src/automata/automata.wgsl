@@ -191,7 +191,6 @@ fn init_state(
 // }
 
 // TODO: expose more init params through uniforms
-// TODO: edge initialization (with init based on gaussian sampling /w transform offset from location)
 // TODO: initialize with more IoC orders of noise/shaping functions and non-uniform edge direction (e.g. skew along a curve)
 fn init_edges(
     location: vec2<i32>,

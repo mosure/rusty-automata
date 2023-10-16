@@ -101,7 +101,7 @@ impl Plugin for RustyAutomataApp {
         // }
 
         if self.show_fps {
-            app.add_plugins(FrameTimeDiagnosticsPlugin::default());
+            app.add_plugins(FrameTimeDiagnosticsPlugin);
             app.add_systems(Startup, fps_display_setup);
             app.add_systems(Update, fps_update_system);
         }

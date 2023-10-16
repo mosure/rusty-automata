@@ -6,6 +6,11 @@ authors = ["mosure <mitchell@mosure.me>"]
 exclude = ["dist", "build", "assets", "credits"]
 
 
+[lib]
+name = "_rusty_automata"
+crate-type = ["cdylib"]
+
+
 
 [dependencies]
 bevy = { version = "0.11.0", default-features=false, features = [
@@ -34,6 +39,7 @@ bevy_pancam = "0.9.0"
 egui = "0.22.0"
 egui_dock = "0.6.3"
 num-format = "0.4.4"
+pyo3 = "0.19.2"
 rand = "0.8.5"
 
 
@@ -69,6 +75,10 @@ inherits = "release"
 opt-level = "z"
 lto = "fat"
 codegen-units = 1
+
+[[example]]
+name = "neat_pack"
+path = "examples/neat_pack.rs"
 
 [[example]]
 name = "neat"

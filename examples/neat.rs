@@ -77,7 +77,7 @@ fn setup(
 }
 
 
-// TODO(test): add visual remap layer via fragment shader
+// TODO: add visual remap layer via fragment shader
 #[derive(AsBindGroup, Clone, Debug, Default, Reflect, TypeUuid)]
 #[uuid = "ac2f08eb-5234-1262-5556-51571ea332d5"]
 struct NeatVisualMaterial { }

@@ -6,3 +6,7 @@ bin/
 pkg/
 wasm-pack.log
 **/*.blend1
+
+
+*.egg-info
+*.pyd

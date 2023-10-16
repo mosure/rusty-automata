@@ -71,7 +71,6 @@ fn setup_screen(
 }
 
 
-// TODO: figure out why material asset handle ID is displayed instead of the material name
 #[derive(AsBindGroup, Clone, Debug, Default, Reflect, TypeUuid)]
 #[uuid = "ac2f08eb-67fa-23f1-a908-51571ea332d5"]
 struct SandboxMaterial { }
